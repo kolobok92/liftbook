@@ -1,0 +1,123 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Cardio sessions</title>
+<style>
+  :root { --bg:#161616; --s1:#242424; --s2:#2F2F2F; --s3:#3A3A3A; --b:#353535; --t:#F4F4F5; --d:#A1A1A6; --f:#6B6B70; --a:#FFC400; --on:#121212; --cy:#4FC3F7; --cyd:#12313d; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #e9e9ec; font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--t); }
+  .row { display: flex; gap: 28px; padding: 28px; align-items: flex-start; }
+  .col { display: flex; flex-direction: column; gap: 10px; }
+  .cap { color: #3a3a3e; font-size: 15px; font-weight: 600; width: 340px; }
+  .cap small { display: block; font-weight: 400; color: #5e5e66; margin-top: 3px; line-height: 1.35; }
+  .phone { width: 340px; height: 700px; background: var(--bg); border-radius: 36px; overflow: hidden; position: relative; padding: 52px 16px 16px; }
+  h1 { font-size: 30px; margin: 0 0 4px; font-weight: 800; }
+  .muted { color: var(--d); font-size: 13px; }
+  .faint { color: var(--f); font-size: 12px; letter-spacing: .06em; font-weight: 700; margin: 18px 0 8px; }
+  .card { background: var(--s1); border-radius: 14px; padding: 14px; margin-bottom: 10px; }
+  .btn { border-radius: 10px; padding: 13px; text-align: center; font-weight: 700; font-size: 15px; }
+  .primary { background: var(--a); color: var(--on); }
+  .secondary { background: var(--s3); color: var(--t); }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .chip { background: var(--s2); border-radius: 999px; padding: 7px 12px; font-size: 13px; font-weight: 600; color: var(--d); display: inline-block; margin: 0 6px 6px 0; }
+  .chip.on { background: var(--a); color: var(--on); }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .act { background: var(--s2); border-radius: 12px; height: 66px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; color: var(--d); gap: 4px; font-weight: 600; }
+  .act b { font-size: 22px; }
+  .act.on { outline: 2px solid var(--a); color: var(--t); }
+  .field { background: var(--s2); border-radius: 10px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; }
+  .big { font-size: 28px; font-weight: 800; }
+  .seg { display: flex; background: var(--s2); border-radius: 10px; padding: 3px; }
+  .seg div { flex: 1; text-align: center; padding: 7px; border-radius: 7px; font-size: 13px; font-weight: 600; color: var(--d); }
+  .seg .on { background: var(--s3); color: var(--t); }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--s1); border-radius: 22px 22px 0 0; padding: 10px 16px 18px; }
+  .grab { width: 38px; height: 5px; border-radius: 3px; background: var(--s3); margin: 0 auto 10px; }
+  .dim { position: absolute; inset: 0; background: rgba(0,0,0,.55); }
+  .cardio { display: flex; gap: 10px; align-items: center; }
+  .ic { width: 34px; height: 34px; border-radius: 10px; background: var(--cyd); color: var(--cy); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .lbl { font-size: 12px; color: var(--d); margin: 12px 0 6px; font-weight: 600; }
+  .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; font-size: 12px; color: var(--d); }
+  .cal span { height: 34px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; gap: 3px; }
+  .dot { width: 5px; height: 5px; border-radius: 3px; background: var(--a); display: inline-block; }
+  .cdot { width: 5px; height: 5px; border-radius: 3px; background: var(--cy); display: inline-block; }
+  .bars { display: flex; align-items: flex-end; gap: 10px; height: 100px; margin-top: 10px; }
+  .bars div { flex: 1; background: var(--cy); border-radius: 4px 4px 0 0; }
+  .note { position: absolute; right: 14px; top: 12px; font-size: 11px; color: var(--f); }
+</style>
+</head>
+<body>
+<div class="row">
+
+  <div class="col">
+    <div class="cap">1 · Home: two quick starts<small>"Log cardio" sits beside "Start Empty Workout". Today's cardio shows under Recent like a workout, without Repeat.</small></div>
+    <div class="phone">
+      <div class="muted">Tuesday, October 20</div>
+      <h1>Today</h1>
+      <div class="card"><div class="faint" style="margin-top:0">UP NEXT · CYCLE 2 · DAY 1</div><div style="font-weight:700;font-size:17px">Push</div><div class="muted" style="margin:4px 0 12px">5 exercises · + evening cardio</div><div class="btn primary">▶ Start Workout</div></div>
+      <div class="faint">QUICK START</div>
+      <div class="two"><div class="btn secondary">+ Empty Workout</div><div class="btn secondary" style="outline:2px solid var(--a)">♥ Log Cardio</div></div>
+      <div class="faint">RECENT</div>
+      <div class="card"><div class="cardio"><div class="ic">🏃</div><div style="flex:1"><div style="font-weight:700">Run</div><div class="muted">Yesterday · 32 min · 3.1 mi · Moderate</div></div></div></div>
+      <div class="card"><div style="font-weight:700">Arms</div><div class="muted">Yesterday · 58m · 9,240 lb</div></div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="cap">2 · Log sheet: one screen, logged after<small>Pick the activity, enter minutes (quick presets) and optionally distance and effort. Time defaults to now and can be changed. "Start timer" runs a live clock instead.</small></div>
+    <div class="phone">
+      <h1 style="opacity:.25">Today</h1>
+      <div class="dim"></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-weight:700;font-size:18px">Log cardio</div><div class="muted">Today, 9:15 PM ›</div></div>
+        <div class="grid4">
+          <div class="act on"><b>🏃</b>Run</div><div class="act"><b>🚴</b>Bike</div><div class="act"><b>🚣</b>Row</div><div class="act"><b>🚶</b>Walk</div>
+          <div class="act"><b>⛰</b>Incline</div><div class="act"><b>🪜</b>Stairs</div><div class="act"><b>🏊</b>Swim</div><div class="act"><b>＋</b>Other</div>
+        </div>
+        <div class="lbl">Duration</div>
+        <div class="field"><span class="big">32 <span class="muted">min</span></span><span><span class="chip">20</span><span class="chip">30</span><span class="chip">45</span></span></div>
+        <div class="lbl">Distance (optional)</div>
+        <div class="field"><span class="big">3.1 <span class="muted">mi</span></span><span class="muted">10:19 /mi</span></div>
+        <div class="lbl">Effort</div>
+        <div class="seg"><div>Easy</div><div class="on">Moderate</div><div>Hard</div></div>
+        <div class="two" style="margin-top:14px"><div class="btn secondary">◷ Start timer</div><div class="btn primary">Save</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="cap">3 · History: both sessions on the day<small>Calendar days get a second, blue dot for cardio. Cardio cards are compact and separate from the lift; tap to edit or delete.</small></div>
+    <div class="phone">
+      <h1>History</h1>
+      <div class="card" style="padding:10px">
+        <div class="cal"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+          <span>12<i class="dot"></i></span><span>13<i class="dot"></i></span><span>14<span><i class="dot"></i> <i class="cdot"></i></span></span><span>15<i class="dot"></i></span><span>16</span><span>17<i class="cdot"></i></span><span>18</span>
+          <span>19<span><i class="dot"></i> <i class="cdot"></i></span></span><span style="background:var(--a);color:var(--on)">20<i class="dot" style="background:var(--on)"></i></span><span>21</span><span>22</span><span>23</span><span>24</span><span>25</span></div>
+      </div>
+      <div class="faint">MONDAY, OCT 19</div>
+      <div class="card"><div style="font-weight:700">Arms</div><div class="muted">7:02 PM · 58m · 9,240 lb · 🏆 2 PRs</div>
+        <div class="muted" style="margin-top:8px">3 × Hammer Curl (Dumbbell) <span style="float:right">40lb × 10</span></div>
+        <div class="muted">3 × Concentration Curl <span style="float:right">25lb × 12</span></div></div>
+      <div class="card"><div class="cardio"><div class="ic">🏃</div><div style="flex:1"><div style="font-weight:700">Run</div><div class="muted">9:15 PM · 32 min · 3.1 mi · Moderate</div></div><div class="muted">›</div></div></div>
+      <div class="faint">SATURDAY, OCT 17</div>
+      <div class="card"><div class="cardio"><div class="ic">🚴</div><div style="flex:1"><div style="font-weight:700">Bike</div><div class="muted">8:40 AM · 45 min · Easy</div></div><div class="muted">›</div></div></div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="cap">4 · Analytics: cardio stands alone<small>Minutes per week and sessions, by activity. Never mixed into volume, PRs or the muscle map.</small></div>
+    <div class="phone">
+      <h1>Analytics</h1>
+      <div class="card"><div style="display:flex;justify-content:space-between"><div style="font-weight:700">Cardio</div><div class="muted">Last 6 weeks</div></div>
+        <div class="bars"><div style="height:40%"></div><div style="height:65%"></div><div style="height:30%"></div><div style="height:85%"></div><div style="height:55%"></div><div style="height:70%"></div></div>
+        <div class="two" style="margin-top:12px"><div><div class="big" style="font-size:22px">104 <span class="muted">min</span></div><div class="muted">this week</div></div><div><div class="big" style="font-size:22px">3 <span class="muted">sessions</span></div><div class="muted">Run 2 · Bike 1</div></div></div>
+      </div>
+      <div class="card"><div style="font-weight:700">Volume</div><div class="muted">Lifting only · 42,180 lb this week</div></div>
+      <div class="card"><div style="font-weight:700">Muscles worked</div><div class="muted">Lifting only</div></div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
