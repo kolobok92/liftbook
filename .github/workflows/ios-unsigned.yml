@@ -1,0 +1,127 @@
+# Builds an UNSIGNED iOS .ipa on a GitHub macOS runner, for sideloading from Windows:
+# download the artifact, then sign + install with your Apple ID using Sideloadly or xtool.
+# See docs/install-on-iphone.md. Run it from the Actions tab ("Run workflow").
+name: iOS unsigned build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+
+      # Expo SDK 58 / React Native 0.88 need Swift 6.2 (Xcode 26); the runner defaults to Xcode 16.
+      - name: Select Xcode 26
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_26.*.app | sort -V | tail -1)
+          echo "Using $XCODE"
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+          xcodebuild -version
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Generate iOS project (Expo prebuild)
+        run: npx expo prebuild --platform ios --clean --no-install
+
+      # ccache: content-addressed compiler cache (React Native's supported option). Survives the
+      # fresh checkout + npm ci that otherwise force a full ~20 min native recompile.
+      - name: Set up ccache
+        run: |
+          brew install ccache
+          echo "CCACHE_DIR=$HOME/.ccache" >> "$GITHUB_ENV"
+          echo "CCACHE_SLOPPINESS=clang_index_store,file_stat_matches,include_file_ctime,include_file_mtime,ivfsoverlay,pch_defines,modules,system_headers,time_macros" >> "$GITHUB_ENV"
+          echo "CCACHE_FILECLONE=true" >> "$GITHUB_ENV"
+          echo "CCACHE_DEPEND=true" >> "$GITHUB_ENV"
+          echo "CCACHE_INODECACHE=true" >> "$GITHUB_ENV"
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-ios-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            ccache-ios-${{ hashFiles('package-lock.json') }}-
+            ccache-ios-
+
+      - name: Enable ccache in the generated iOS project
+        run: |
+          node -e '
+            const f = "ios/Podfile.properties.json";
+            const p = JSON.parse(require("fs").readFileSync(f, "utf8"));
+            p["apple.ccacheEnabled"] = "true";
+            require("fs").writeFileSync(f, JSON.stringify(p, null, 2));
+            console.log(p);'
+
+      - name: Install CocoaPods
+        working-directory: ios
+        run: pod install
+
+      - name: Toolchain versions
+        run: |
+          xcodebuild -version
+          ls -d /Applications/Xcode*.app
+          node --version
+          pod --version
+
+      - name: Build (no code signing)
+        run: |
+          set -uo pipefail
+          WORKSPACE=$(ls -d ios/*.xcworkspace | head -1)
+          SCHEME=$(basename "$WORKSPACE" .xcworkspace)
+          echo "Workspace: $WORKSPACE  Scheme: $SCHEME"
+          # Full log goes to a file (uploaded on failure); the console gets errors only.
+          xcodebuild \
+            -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            > xcodebuild.log 2>&1
+          STATUS=$?
+          if [ $STATUS -ne 0 ]; then
+            echo "::group::errors"
+            grep -nE "error:|Error:|fatal|failed|exited with|Command PhaseScriptExecution" xcodebuild.log | head -n 80 || true
+            echo "::endgroup::"
+            echo "::group::last 150 lines"
+            tail -n 150 xcodebuild.log
+            echo "::endgroup::"
+            exit $STATUS
+          fi
+          echo "SCHEME=$SCHEME" >> "$GITHUB_ENV"
+
+      - name: Upload build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: xcodebuild.log
+          retention-days: 7
+
+      - name: ccache stats
+        if: always()
+        run: ccache --show-stats || true
+
+      - name: Package .ipa
+        run: |
+          set -euo pipefail
+          APP=$(ls -d build/Build/Products/Release-iphoneos/*.app | head -1)
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          zip -qry "Liftbook-unsigned.ipa" Payload
+          ls -lh Liftbook-unsigned.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Liftbook-unsigned-ipa
+          path: Liftbook-unsigned.ipa
+          retention-days: 14

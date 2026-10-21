@@ -1,0 +1,36 @@
+# Appearance setting: Light and Dark override the system scheme (visual baselines of the same
+# card in both), and the choice survives a relaunch.
+appId: ${APP_ID}
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Today"
+    timeout: 30000
+- tapOn: "Profile"
+- tapOn:
+    id: "appearance-dark"
+- takeScreenshot:
+    path: el-settings-dark
+    cropOn:
+      id: "settings-workout-card"
+- tapOn:
+    id: "appearance-light"
+- takeScreenshot:
+    path: el-settings-light
+    cropOn:
+      id: "settings-workout-card"
+- tapOn:
+    id: "appearance-dark"
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Today"
+    timeout: 30000
+- tapOn: "Profile"
+# Same pixels as before the relaunch: still dark.
+- takeScreenshot:
+    path: el-settings-dark-relaunched
+    cropOn:
+      id: "settings-workout-card"
+- takeScreenshot: 06-profile-dark

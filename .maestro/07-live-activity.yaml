@@ -1,0 +1,22 @@
+# iOS only: a running workout shows a Live Activity (Dynamic Island + lock screen) with the
+# next set and a count-up clock. Maestro can't read outside the app, so this captures
+# screenshots for review rather than asserting the island's contents.
+appId: ${APP_ID}
+tags:
+  - ios-only
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Today"
+    timeout: 30000
+- tapOn:
+    id: "start-next-workout"
+- pressKey: Home
+- waitForAnimationToEnd
+- takeScreenshot: 04-dynamic-island
+- launchApp # back via the app icon; the workout is still running
+- extendedWaitUntil:
+    visible:
+      id: "active-workout-bar"
+    timeout: 10000

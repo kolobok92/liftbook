@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "Liftbook",
+    "slug": "liftbook",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "io.liftbook.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#121212",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "io.liftbook.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sharing",
+      "expo-image",
+      "expo-live-activity",
+      "./plugins/withElapsedLiveActivity"
+    ],
+    "scheme": "liftbook",
+    "backgroundColor": "#121212"
+  }
+}

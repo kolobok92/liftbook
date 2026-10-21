@@ -1,0 +1,210 @@
+# Builds the app for the iOS Simulator and drives it with Maestro (.maestro/*.yaml) on a GitHub
+# macOS runner: real native iOS UI, no device or signing needed. Uploads screenshots, a screen
+# recording, and the JUnit report.
+#
+# Speed: the native app is cached by its Expo fingerprint (a hash of native inputs: deps,
+# app.json, config plugins). JS-only changes reuse the cached .app and just re-bundle the JS into
+# it; only native changes recompile. Native builds target arm64 only — the runners are Apple
+# Silicon, and also building the x86_64 simulator slice doubled compile time.
+name: iOS simulator tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      force_native:
+        description: Rebuild native code even if the fingerprint is cached
+        type: boolean
+        default: false
+  # Manual only: macOS minutes are scarce (10x multiplier on private repos). Iterate locally on the
+  # Android emulator (node scripts/maestro-android.mjs); run this once as the final iOS gate.
+
+concurrency:
+  group: ios-simulator-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  maestro:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      # Test build: enables the liftbook://e2e-seed scenarios the flows start from (src/lib/e2eScenarios.ts).
+      EXPO_PUBLIC_E2E: '1'
+    steps:
+      - uses: actions/checkout@v5
+
+      # Boot the simulator now, in the background, so it's ready when the build finishes.
+      - name: Start booting a simulator
+        run: |
+          set -euo pipefail
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, re, sys
+          d = json.load(sys.stdin)["devices"]
+          phones = [x for rt, l in d.items() if "iOS" in rt for x in l if x["name"].startswith("iPhone")]
+          pick = [x for x in phones if re.fullmatch(r"iPhone \d+( Pro)?", x["name"])] or phones
+          print(pick[-1]["udid"])')
+          echo "SIM_UDID=$UDID" >> "$GITHUB_ENV"
+          xcrun simctl boot "$UDID"
+
+      # Expo SDK 58 / React Native 0.88 need Swift 6.2 (Xcode 26); the runner defaults to Xcode 16.
+      - name: Select Xcode 26
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_26.*.app | sort -V | tail -1)
+          echo "Using $XCODE"
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Native fingerprint
+        run: |
+          FP=$(npx @expo/fingerprint . | node -e 'console.log(JSON.parse(require("fs").readFileSync(0,"utf8")).hash)')
+          echo "Fingerprint: $FP"
+          echo "FP=$FP" >> "$GITHUB_ENV"
+
+      - name: Restore cached native app
+        id: app-cache
+        if: ${{ !inputs.force_native }}
+        uses: actions/cache/restore@v4
+        with:
+          path: cached-app
+          key: ios-sim-app-${{ env.FP }}
+
+      # ---------- Native build (only when the fingerprint changed) ----------
+      - name: Generate iOS project (Expo prebuild)
+        if: steps.app-cache.outputs.cache-hit != 'true'
+        run: npx expo prebuild --platform ios --clean --no-install
+
+      - name: Set up ccache
+        if: steps.app-cache.outputs.cache-hit != 'true'
+        run: |
+          brew install ccache
+          echo "CCACHE_DIR=$HOME/.ccache" >> "$GITHUB_ENV"
+          echo "CCACHE_SLOPPINESS=clang_index_store,file_stat_matches,include_file_ctime,include_file_mtime,ivfsoverlay,pch_defines,modules,system_headers,time_macros" >> "$GITHUB_ENV"
+          echo "CCACHE_FILECLONE=true" >> "$GITHUB_ENV"
+          echo "CCACHE_DEPEND=true" >> "$GITHUB_ENV"
+          echo "CCACHE_INODECACHE=true" >> "$GITHUB_ENV"
+          node -e '
+            const f = "ios/Podfile.properties.json";
+            const p = JSON.parse(require("fs").readFileSync(f, "utf8"));
+            p["apple.ccacheEnabled"] = "true";
+            require("fs").writeFileSync(f, JSON.stringify(p, null, 2));'
+
+      - uses: actions/cache/restore@v4
+        if: steps.app-cache.outputs.cache-hit != 'true'
+        with:
+          path: ~/.ccache
+          key: ccache-ios-sim-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            ccache-ios-sim-${{ hashFiles('package-lock.json') }}-
+            ccache-ios-sim-
+
+      - name: Install CocoaPods
+        if: steps.app-cache.outputs.cache-hit != 'true'
+        working-directory: ios
+        run: pod install
+
+      - name: Build for simulator (Release, arm64 only)
+        if: steps.app-cache.outputs.cache-hit != 'true'
+        run: |
+          set -uo pipefail
+          WORKSPACE=$(ls -d ios/*.xcworkspace | head -1)
+          SCHEME=$(basename "$WORKSPACE" .xcworkspace)
+          xcodebuild \
+            -workspace "$WORKSPACE" -scheme "$SCHEME" -configuration Release \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO \
+            > xcodebuild.log 2>&1
+          STATUS=$?
+          if [ $STATUS -ne 0 ]; then
+            grep -nE "error:|exited with|Command PhaseScriptExecution failed" xcodebuild.log | head -n 60 || true
+            tail -n 120 xcodebuild.log
+            exit $STATUS
+          fi
+          ccache --show-stats || true
+          mkdir -p cached-app
+          cp -R build/Build/Products/Release-iphonesimulator/*.app cached-app/
+
+      # Saved explicitly: a post-job save is skipped when a later step (e.g. Maestro) fails.
+      - name: Save ccache
+        if: steps.app-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.ccache
+          key: ccache-ios-sim-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+
+      - name: Save native app to cache
+        if: steps.app-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: cached-app
+          key: ios-sim-app-${{ env.FP }}
+
+      # ---------- JS-only path: repack the cached app with a fresh bundle ----------
+      - name: Repack cached app with the current JS
+        if: steps.app-cache.outputs.cache-hit == 'true'
+        run: |
+          set -euo pipefail
+          APP=$(ls -d cached-app/*.app | head -1)
+          npx expo export:embed --platform ios --dev false \
+            --entry-file node_modules/expo-router/entry.js \
+            --bundle-output "$APP/main.jsbundle" --assets-dest "$APP"
+          ls -lh "$APP/main.jsbundle"
+
+      - name: Install the app on the simulator
+        run: |
+          set -euo pipefail
+          xcrun simctl bootstatus "$SIM_UDID" -b
+          xcrun simctl install "$SIM_UDID" "$(ls -d cached-app/*.app | head -1)"
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install Maestro
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      - name: Run Maestro flows (with screen recording)
+        env:
+          # The XCUITest driver can take minutes to come up on a cold CI simulator.
+          MAESTRO_DRIVER_STARTUP_TIMEOUT: '180000'
+        run: |
+          # +e: Actions runs steps with bash -e, which would exit before STATUS/retry/stop-recording.
+          set +e -uo pipefail
+          mkdir -p artifacts
+          xcrun simctl io "$SIM_UDID" recordVideo --codec=h264 artifacts/run.mp4 &
+          REC=$!
+          run() {
+            maestro --device="$SIM_UDID" test .maestro/ \
+              -e APP_ID=io.liftbook.app \
+              --test-output-dir=artifacts/output \
+              --debug-output=artifacts/debug \
+              --format=JUNIT --output=artifacts/report.xml
+          }
+          run
+          STATUS=$?
+          # No report means the driver never started (infra), not a test failure: retry once.
+          if [ $STATUS -ne 0 ] && [ ! -f artifacts/report.xml ]; then
+            echo "::warning::Maestro driver failed to start; retrying once"
+            run
+            STATUS=$?
+          fi
+          kill -INT $REC; wait $REC || true
+          exit $STATUS
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-simulator-results
+          path: |
+            artifacts/
+            xcodebuild.log
+          retention-days: 14

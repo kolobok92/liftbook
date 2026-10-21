@@ -1,0 +1,117 @@
+# In-workout editing on a program day (PPLUA Push): swipe-delete and add sets, set type + RPE,
+# swap, superset, note, reorder, swipe-delete an exercise, complete-all collapse.
+appId: ${APP_ID}
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Today"
+    timeout: 30000
+- tapOn:
+    id: "start-next-workout"
+- assertVisible: '1, Lateral Raise \(Cable\)'
+
+# Sets: swipe set 2 away (4 → 3), add one back (→ 4).
+- swipe:
+    from:
+      id: "set-row-0-1"
+    direction: LEFT
+- tapOn:
+    id: "swipe-delete-0-1"
+- assertNotVisible:
+    id: "set-row-0-3"
+- scrollUntilVisible:
+    element:
+      id: "add-set-0"
+    direction: DOWN
+- tapOn:
+    id: "add-set-0"
+- assertVisible:
+    id: "set-row-0-3"
+
+# Set type and RPE from the set menu.
+- tapOn:
+    id: "set-type-0-0"
+- tapOn:
+    id: "settype-warmup"
+- assertVisible:
+    text: "W"
+    childOf:
+      id: "set-type-0-0"
+- assertVisible:
+    text: "1" # normal sets are numbered among themselves
+    childOf:
+      id: "set-type-0-1"
+- tapOn:
+    id: "set-type-0-1"
+- tapOn:
+    id: "set-rpe"
+- tapOn:
+    id: "rpe-8"
+- takeScreenshot: 02-sets-edited
+
+# Swap exercise 2 for a dumbbell press.
+- scrollUntilVisible:
+    element:
+      id: "swap-1"
+    direction: DOWN
+- tapOn:
+    id: "swap-1"
+- tapOn:
+    id: "exercise-search"
+- inputText: "incline dumbbell"
+- tapOn:
+    id: "pick-incline-bench-press-dumbbell"
+- assertVisible: '2, Incline Bench Press \(Dumbbell\)'
+
+# Superset exercises 1+2, then a note on exercise 3.
+- scrollUntilVisible:
+    element:
+      id: "exercise-menu-0"
+    direction: UP
+- tapOn:
+    id: "exercise-menu-0"
+- tapOn:
+    id: "menu-superset"
+- assertVisible: "SUPERSET A"
+- scrollUntilVisible:
+    element:
+      id: "exercise-menu-2"
+    direction: DOWN
+- tapOn:
+    id: "exercise-menu-2"
+- tapOn:
+    id: "menu-note"
+- inputText: "Seat on 4"
+- tapOn:
+    id: "note-ok"
+- assertVisible: "Seat on 4"
+- takeScreenshot: 02-superset-and-note
+
+# Reorder: chest fly (4th) to the top.
+- scrollUntilVisible:
+    element:
+      id: "exercise-menu-0"
+    direction: UP
+- tapOn:
+    id: "exercise-menu-0"
+- tapOn:
+    id: "menu-reorder"
+- tapOn:
+    id: "reorder-top-3"
+- tapOn: "Done"
+# Scroll to the header itself: a scroll to the card stops as soon as its bottom edge shows.
+- scrollUntilVisible:
+    element: '1, Chest Fly \(Machine\)'
+    direction: UP
+
+# Swipe the (untouched) first exercise away: no confirmation needed.
+- swipe:
+    from:
+      id: "collapse-0"
+    direction: LEFT
+- tapOn:
+    id: "swipe-delete-exercise-0"
+- assertVisible: '1, Lateral Raise \(Cable\)'
+- takeScreenshot: 02-after-delete
+# (Collapse-on-complete is covered by 01, which logs real numbers: empty sets can't be checked.)

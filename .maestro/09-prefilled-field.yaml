@@ -1,0 +1,39 @@
+# Device-only smoke check: typing into a field that already holds a number (pre-filled from the
+# set above on focus, or typed earlier) replaces it. On Android the focusing tap moved the caret
+# and digits landed inside the number (135 → 113535); component tests can't see the caret.
+appId: ${APP_ID}
+---
+# Starting state from the test-build seed link (src/lib/e2eScenarios.ts), not setup taps.
+- clearState
+- openLink: liftbook://e2e-seed?scenario=bench-active
+- extendedWaitUntil:
+    visible:
+      id: "weight-0-0"
+    timeout: 30000
+- tapOn:
+    id: "weight-0-0"
+- inputText: "135"
+- tapOn:
+    id: "reps-0-0"
+- inputText: "8"
+- tapOn:
+    id: "check-0-0"
+# Focus moved to set 2 and filled it from set 1; type over both numbers.
+- tapOn:
+    id: "weight-0-1"
+- inputText: "140"
+- tapOn:
+    id: "reps-0-1"
+- inputText: "6"
+# Re-edit a number typed earlier in the same set.
+- tapOn:
+    id: "weight-0-1"
+- inputText: "145"
+- tapOn:
+    id: "check-0-1"
+- assertVisible:
+    id: "weight-0-1"
+    text: "145"
+- assertVisible:
+    id: "reps-0-1"
+    text: "6"

@@ -1,0 +1,81 @@
+# Applying in-workout changes back to the program, per exercise: add a set and swap on Push,
+# finish, keep only the extra set, and see the next Push day built from the updated program.
+appId: ${APP_ID}
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Today"
+    timeout: 30000
+- tapOn:
+    id: "start-next-workout"
+
+- tapOn:
+    id: "add-set-0" # lateral raise: 4 → 5 sets
+- scrollUntilVisible:
+    element:
+      id: "swap-1"
+    direction: DOWN
+- tapOn:
+    id: "swap-1"
+- tapOn:
+    id: "exercise-search"
+- inputText: "incline dumbbell"
+- tapOn:
+    id: "pick-incline-bench-press-dumbbell"
+
+# Log one set so the workout can be finished; leave the rest unchecked.
+- scrollUntilVisible:
+    element:
+      id: "weight-0-0"
+    direction: UP
+- tapOn:
+    id: "weight-0-0"
+- inputText: "20"
+- tapOn:
+    id: "reps-0-0"
+- inputText: "12"
+- tapOn:
+    id: "check-0-0"
+- tapOn:
+    id: "finish-workout"
+- tapOn: "Finish" # confirm: unchecked sets won't be saved
+
+- extendedWaitUntil:
+    visible:
+      id: "program-changes"
+    timeout: 10000
+- assertVisible: '.*4 → 5 sets.*'
+- assertVisible: '.*Swapped for Incline Bench Press \(Dumbbell\).*'
+- takeScreenshot: 03-program-changes
+
+# Untick the swap; apply only the extra set.
+- tapOn: '.*Swapped for Incline Bench Press \(Dumbbell\).*'
+- tapOn:
+    id: "apply-program"
+- assertVisible: 'Program updated.*'
+- tapOn:
+    id: "summary-done"
+
+# Next Push day: 5 lateral raise sets, original chest press kept.
+- tapOn:
+    id: "toggle-full-plan"
+- scrollUntilVisible:
+    element:
+      id: "program-day-0-0"
+    direction: DOWN
+- tapOn:
+    id: "program-day-0-0"
+- tapOn:
+    id: "start-preview-workout"
+- assertVisible:
+    id: "set-row-0-4"
+- assertVisible: '2, Incline Chest Press \(Machine\)'
+- assertVisible:
+    id: "prev-0-0"
+    text: '.*20lb × 12.*'
+# Only set 1 was logged: set 2 has no previous (no fallback to the last set).
+- assertVisible:
+    id: "prev-0-1"
+    text: 'No previous'
+- takeScreenshot: 03-next-push-day

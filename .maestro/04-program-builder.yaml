@@ -1,0 +1,102 @@
+# Build a loop program (two days, a target applied to all sets), start it, and run day 1 with
+# the prescribed targets.
+appId: ${APP_ID}
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Today"
+    timeout: 30000
+- tapOn: "Programs"
+- tapOn:
+    id: "new-program"
+- tapOn:
+    id: "program-name"
+- inputText: "Upper Lower"
+- tapOn:
+    id: "day-name-0"
+- eraseText
+- inputText: "Upper"
+- hideKeyboard
+- tapOn:
+    id: "builder-add-exercise-0"
+- tapOn:
+    id: "exercise-search"
+- inputText: "bench barbell"
+- tapOn:
+    id: "pick-bench-press-barbell"
+- tapOn:
+    id: "picker-add"
+
+# First set's target → 5 reps @ RPE 8, applied to all sets.
+- tapOn:
+    id: "builder-set-0-0"
+- tapOn:
+    id: "target-kind-reps"
+- tapOn:
+    id: "target-a"
+- eraseText
+- inputText: "5"
+- hideKeyboard
+- tapOn:
+    id: "intensity-kind-rpe"
+- tapOn:
+    id: "intensity-a"
+- eraseText
+- inputText: "8"
+- hideKeyboard
+- tapOn:
+    id: "target-apply-all"
+- assertVisible:
+    text: '.*5 reps.*'
+    childOf:
+      id: "builder-set-0-2"
+- takeScreenshot: 04-builder-day1
+
+- scrollUntilVisible:
+    element:
+      id: "builder-add-day"
+    direction: DOWN
+- tapOn:
+    id: "builder-add-day"
+- tapOn:
+    id: "day-name-1"
+- eraseText
+- inputText: "Lower"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "builder-add-exercise-1"
+    direction: DOWN
+- tapOn:
+    id: "builder-add-exercise-1"
+- tapOn:
+    id: "exercise-search"
+- inputText: "squat barbell"
+- tapOn:
+    id: "pick-squat-barbell"
+- tapOn:
+    id: "picker-add"
+- scrollUntilVisible:
+    element:
+      id: "save-program-bottom"
+    direction: DOWN
+- tapOn:
+    id: "save-program-bottom"
+
+# Program detail → start it (switching away from PPLUA asks first).
+- tapOn:
+    id: "start-program"
+- tapOn: '(?i)switch'
+- extendedWaitUntil:
+    visible: "Today"
+    timeout: 10000
+- assertVisible: 'Upper Lower'
+- assertVisible: 'UP NEXT · CYCLE 1 · DAY 1'
+- tapOn:
+    id: "start-next-workout"
+- assertVisible: '1, Bench Press \(Barbell\)'
+# (Only one exercise on this day, so plain text is unambiguous.)
+- assertVisible: '5 reps'
+- assertVisible: 'RPE 8'
+- takeScreenshot: 04-program-day1-workout

@@ -1,0 +1,92 @@
+# Native iOS check of the core loop: log a session, finish, repeat it, and see last time's
+# numbers in Previous + tap-to-fill. Ids are React Native testIDs (iOS accessibilityIdentifier).
+# Runs on the iOS simulator build (CI) and a local Android release build
+# (node scripts/maestro-android.mjs); both pass -e APP_ID=… (a flow env default would override -e).
+appId: ${APP_ID}
+---
+# Starting state from the test-build seed link (src/lib/e2eScenarios.ts), not setup taps.
+- clearState
+- openLink: liftbook://e2e-seed?scenario=bench-active
+- extendedWaitUntil:
+    visible:
+      id: "weight-0-0"
+    timeout: 30000
+# Text matchers are full-match regexes over accessibility labels (iOS merges a row's texts,
+# e.g. "1, Bench Press (Barbell)"; Previous cells read "Copy previous 135lb × 8").
+- assertVisible: '.*Bench Press \(Barbell\)'
+- takeScreenshot: 02-workout-empty
+
+# Log three sets with the native number pad.
+- tapOn:
+    id: "weight-0-0"
+- inputText: "135"
+- tapOn:
+    id: "reps-0-0"
+- inputText: "8"
+- tapOn:
+    id: "check-0-0"
+- tapOn:
+    id: "weight-0-1"
+- inputText: "135"
+- tapOn:
+    id: "reps-0-1"
+- inputText: "8"
+- tapOn:
+    id: "check-0-1"
+- tapOn:
+    id: "weight-0-2"
+- inputText: "140"
+- tapOn:
+    id: "reps-0-2"
+- inputText: "6"
+- tapOn:
+    id: "check-0-2"
+# All sets done: the card folds into a summary; best set is by estimated 1RM (135×8 > 140×6).
+- assertVisible: '3 sets · best 135lb × 8'
+- takeScreenshot: 03-sets-logged
+
+- tapOn:
+    id: "finish-workout"
+- assertVisible: "Workout Complete"
+- takeScreenshot: 04-summary
+- tapOn:
+    id: "summary-done"
+
+# Repeat it: Previous shows last session, tapping a set fills it in.
+- scrollUntilVisible:
+    element:
+      id: "repeat-workout"
+    direction: DOWN
+- tapOn:
+    id: "repeat-workout"
+- assertVisible: '.*135lb × 8'
+- assertVisible: '.*140lb × 6'
+- takeScreenshot: 05-repeat-previous
+- tapOn:
+    id: "weight-0-0"
+- takeScreenshot: 06-tap-to-fill
+- tapOn:
+    id: "check-0-0"
+- takeScreenshot: 07-checked-focus-next
+# Visual baselines (el-*: compared by the Android runner): the set just checked, and the one
+# that took focus. Catches clipped/misaligned numbers that assertions can't see.
+- takeScreenshot:
+    path: el-row-checked
+    cropOn:
+      id: "set-row-0-0"
+- takeScreenshot:
+    path: el-row-focused
+    cropOn:
+      id: "set-row-0-1"
+
+# Survives a relaunch (persisted, including the in-progress workout).
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: "active-workout-bar"
+    timeout: 30000
+- tapOn:
+    id: "active-workout-bar"
+- assertVisible: '.*135lb × 8'
+- takeScreenshot: 08-after-relaunch

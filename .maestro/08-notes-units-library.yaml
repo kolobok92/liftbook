@@ -1,0 +1,86 @@
+# Last session's note offered on the next one; switching to kg converts logged weights (and the
+# next Previous); "fill in automatically" enters last numbers as values; How-to for an imported
+# exercise shows photos and steps.
+appId: ${APP_ID}
+---
+# Starting state from the test-build seed link (src/lib/e2eScenarios.ts), not setup taps.
+- clearState
+- openLink: liftbook://e2e-seed?scenario=bench-active
+- extendedWaitUntil:
+    visible:
+      id: "weight-0-0"
+    timeout: 30000
+
+# Session 1: bench 100 lb × 5 with a note.
+- tapOn:
+    id: "exercise-menu-0"
+- tapOn:
+    id: "menu-note"
+- inputText: "Pause on chest"
+- tapOn:
+    id: "note-ok"
+- tapOn:
+    id: "weight-0-0"
+- inputText: "100"
+# Regression: straight from the note, the first digit used to be lost ("00").
+- assertVisible:
+    id: "weight-0-0"
+    text: "100"
+- tapOn:
+    id: "reps-0-0"
+- inputText: "5"
+- tapOn:
+    id: "check-0-0"
+- tapOn:
+    id: "finish-workout"
+- tapOn: '(?i)finish'
+- extendedWaitUntil:
+    visible: "Workout Complete"
+    timeout: 10000
+- tapOn:
+    id: "summary-done"
+
+# Switch to kg: 100 lb → 45.4 kg everywhere, including Previous.
+- tapOn: "Profile"
+- tapOn:
+    id: "unit-kg"
+- tapOn: '(?i)convert'
+# Fill in numbers automatically.
+- tapOn:
+    id: "autofill-switch"
+- tapOn: "Home"
+
+# Session 2 (Repeat): last note offered; Previous in kg; values already filled.
+- scrollUntilVisible:
+    element:
+      id: "repeat-workout"
+    direction: DOWN
+- tapOn:
+    id: "repeat-workout"
+- assertVisible:
+    id: "prev-0-0"
+    text: '.*45\.4kg × 5.*'
+- assertVisible:
+    id: "weight-0-0"
+    text: '45\.4'
+- assertVisible: '.*Pause on chest.*'
+- tapOn:
+    id: "last-note-0"
+- takeScreenshot: 08-repeat-kg-autofill
+- tapOn:
+    id: "discard-workout"
+- tapOn: '(?i)discard'
+
+# How-to for an imported exercise (free-exercise-db): photos + steps.
+- tapOn: "Analytics"
+- tapOn:
+    id: "open-exercises"
+- tapOn:
+    id: "exercise-search"
+- inputText: "zercher"
+- tapOn: 'Zercher Squats?'
+- extendedWaitUntil:
+    visible:
+      id: "how-to"
+    timeout: 10000
+- takeScreenshot: 08-how-to
