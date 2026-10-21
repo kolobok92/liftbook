@@ -1,5 +1,6 @@
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it, type jest } from '@jest/globals';
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
+import * as Haptics from 'expo-haptics';
 import { Keypad } from './Keypad';
 import { WorkoutEditor } from './WorkoutEditor';
 import { useStore } from '@/lib/store';
@@ -190,6 +191,18 @@ describe('tracker', () => {
     await fireEvent.press(el('keypad-tab-number'));
     await keys('6');
     expect(sets()[0].reps).toBe(6);
+  });
+
+  it('each keypad key gives a light tick, unless haptics are off in Profile', async () => {
+    const tick = Haptics.selectionAsync as unknown as jest.Mock;
+    await startWith([BENCH], { sets: 1 });
+    tick.mockClear();
+    await type('weight-0-0', '135');
+    await fireEvent.press(el('keypad-next'));
+    expect(tick).toHaveBeenCalledTimes(4);
+    await act(async () => useStore.getState().updateSettings({ haptics: false }));
+    await keys('8');
+    expect(tick).toHaveBeenCalledTimes(4);
   });
 
   it('an empty circle with nothing to hint from does nothing', async () => {

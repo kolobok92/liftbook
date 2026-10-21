@@ -4,7 +4,7 @@ import { Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, R, themed } from '@/lib/theme';
 import { RPE_LABELS, fmtNum } from '@/lib/calc';
-import { Txt } from '../ui';
+import { Txt, haptic } from '../ui';
 import { useKeypad, type KeypadKey } from './keypadStore';
 
 const TOOLBAR = 44;
@@ -96,11 +96,27 @@ export function Keypad({ scrollRef, scrollY }: { scrollRef?: RefObject<Component
           {target.rpe ? tabBtn('rpe', 'RPE') : null}
         </View>
         {rpeTab ? (
-          <Pressable testID="keypad-clear" accessibilityRole="button" onPress={() => pickRpe(null)} style={styles.tool}>
+          <Pressable
+            testID="keypad-clear"
+            accessibilityRole="button"
+            onPress={() => {
+              haptic('tick');
+              pickRpe(null);
+            }}
+            style={styles.tool}
+          >
             <Txt weight="600">Clear</Txt>
           </Pressable>
         ) : null}
-        <Pressable testID="keypad-next" accessibilityRole="button" onPress={next} style={[styles.tool, styles.nextBtn]}>
+        <Pressable
+          testID="keypad-next"
+          accessibilityRole="button"
+          onPress={() => {
+            haptic('tick');
+            next();
+          }}
+          style={[styles.tool, styles.nextBtn]}
+        >
           <Txt weight="800" color={C.bg}>
             {target.next ? 'Next' : 'Done'}
           </Txt>
@@ -117,7 +133,10 @@ export function Keypad({ scrollRef, scrollY }: { scrollRef?: RefObject<Component
                   testID={`keypad-rpe-${v}`}
                   accessibilityRole="button"
                   accessibilityLabel={`RPE ${v}`}
-                  onPress={() => pickRpe(v)}
+                  onPress={() => {
+                    haptic('tick');
+                    pickRpe(v);
+                  }}
                   style={[styles.key, styles.rpeKey, on && { backgroundColor: C.accent }]}
                 >
                   <Txt size={20} weight="700" color={on ? C.onAccent : C.text}>
@@ -142,7 +161,10 @@ export function Keypad({ scrollRef, scrollY }: { scrollRef?: RefObject<Component
                   accessibilityRole="button"
                   accessibilityLabel={k === 'del' ? 'Delete' : k === '.' ? 'Decimal point' : k}
                   disabled={k === '.' && target.integer}
-                  onPress={() => press(k)}
+                  onPress={() => {
+                    haptic('tick');
+                    press(k);
+                  }}
                   style={({ pressed }) => [styles.key, pressed && styles.keyPressed, k === '.' && target.integer && { opacity: 0.3 }]}
                 >
                   {k === 'del' ? (

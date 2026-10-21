@@ -409,9 +409,11 @@ export function notify(title: string, message: string) {
   else Alert.alert(title, message);
 }
 
-export function haptic(kind: 'light' | 'success' | 'warning' = 'light') {
+/** tick: the lightest tap (keypad keys, like a keyboard's key feedback). */
+export function haptic(kind: 'tick' | 'light' | 'success' | 'warning' = 'light') {
   if (Platform.OS === 'web' || !useStore.getState().settings.haptics) return;
-  if (kind === 'light') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+  if (kind === 'tick') Haptics.selectionAsync().catch(() => {});
+  else if (kind === 'light') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
   else Haptics.notificationAsync(kind === 'success' ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning).catch(() => {});
 }
 

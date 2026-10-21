@@ -30,7 +30,7 @@ jest.mock('@expo/vector-icons', () => {
   return { Ionicons: Icon, MaterialCommunityIcons: Icon };
 });
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
-jest.mock('expo-haptics', () => ({ impactAsync: async () => {}, selectionAsync: async () => {}, notificationAsync: async () => {}, ImpactFeedbackStyle: {}, NotificationFeedbackType: {} }));
+jest.mock('expo-haptics', () => ({ impactAsync: async () => {}, selectionAsync: jest.fn(async () => {}), notificationAsync: async () => {}, ImpactFeedbackStyle: {}, NotificationFeedbackType: {} }));
 jest.mock('expo-router', () => ({ router: { push: () => {}, back: () => {}, replace: () => {} }, useLocalSearchParams: () => ({}), Link: 'Link' }));
 // The store's debounced AsyncStorage writes would fire after a test ends; keep state in memory.
 jest.mock('@/lib/storage', () => ({ debouncedStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} }, flushStorage: async () => {} }));
