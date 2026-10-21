@@ -17,6 +17,15 @@ describe('workoutActivity', () => {
     expect(a).toEqual({ title: 'T-Bar Row', subtitle: 'Set 2 of 4', startedAt: 1_000_000 });
   });
 
+  it('follows the exercise you started out of order, then moves on to the next unfinished one', () => {
+    const plan: [string, boolean[]][] = [['bench', [false, false]], ['row', [true, false]], ['curl', [false]]];
+    // Started with the second exercise: the lock screen shows it, not the untouched first one.
+    expect(workoutActivity(w(plan, { currentRowId: 'e1' }), byId)).toMatchObject({ title: 'T-Bar Row', subtitle: 'Set 2 of 2' });
+    // Finished it: the next unfinished exercise after it, wrapping to the top past the end.
+    const rowDone: [string, boolean[]][] = [['bench', [false, false]], ['row', [true, true]], ['curl', [true]]];
+    expect(workoutActivity(w(rowDone, { currentRowId: 'e1' }), byId)).toMatchObject({ title: 'Bench Press (Barbell)', subtitle: 'Set 1 of 2' });
+  });
+
   it('counts up from the start minus time spent paused', () => {
     expect(workoutActivity(w([['bench', [false]]], { pausedMs: 90_000 }), byId).startedAt).toBe(1_090_000);
   });

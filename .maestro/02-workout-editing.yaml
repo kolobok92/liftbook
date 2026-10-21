@@ -73,7 +73,11 @@ appId: ${APP_ID}
     id: "exercise-menu-0"
 - tapOn:
     id: "menu-superset"
-- assertVisible: "SUPERSET A"
+# "Superset with…" lists the day's other exercises; pick the second one.
+- tapOn:
+    id: "superset-pick-1"
+- assertVisible:
+    id: "superset-box-0"
 - scrollUntilVisible:
     element:
       id: "exercise-menu-2"

@@ -31,13 +31,16 @@ export type ExerciseCardProps = {
   programRef?: { programId: string; week: number; day: number };
   /** live: the in-progress workout. edit: editing a logged workout. */
   mode: 'live' | 'edit';
-  supersetLabel?: string;
+  /** Shown inside a superset card (WorkoutEditor draws the frame and the exercise tabs). */
+  embedded?: boolean;
   /** Stable callbacks from the editor (keyed by row id / index) so memo can skip unchanged cards. */
   onChange: (rowId: string, fn: (e: WorkoutExercise) => WorkoutExercise) => void;
   onMenu: (index: number) => void;
   onSwap: (rowId: string) => void;
   /** This card holds the workout's next unchecked set: mark it (Boostcamp: "your current set stays highlighted"). */
   upNext?: boolean;
+  /** This exercise is being worked on (a set checked, a field opened). */
+  onWorkOn?: (rowId: string, by: 'check' | 'open') => void;
 };
 
 function prevLabel(s: LoggedSet | undefined, unit: Unit, timed?: boolean): { top: string; sub: string } {
@@ -60,6 +63,22 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
   // The set whose field is on the keypad; it and its card get the orange outline.
   const editingSetId = useKeypad((k) => (k.target?.id.startsWith(`${we.id}:`) ? k.target.id.split(':')[1] : null));
   const fieldRefs = useRef(new Map<string, ComponentRef<typeof View> | null>());
+  // Close the pad if the field it types into goes away under it: the set or the exercise is
+  // deleted, or a swap changes reps to seconds. It would keep writing where you can't see.
+  const timedNow = !!ex?.timed;
+  useEffect(() => {
+    const k = useKeypad.getState();
+    const [row, setId, field] = k.target?.id.split(':') ?? [];
+    if (row !== we.id) return;
+    if (!we.sets.some((x) => x.id === setId) || (field !== 'weight' && (field === 'seconds') !== timedNow)) k.close();
+  }, [we.id, we.sets, timedNow]);
+  useEffect(
+    () => () => {
+      const k = useKeypad.getState();
+      if (k.target?.id.startsWith(`${we.id}:`)) k.close(); // the exercise was removed
+    },
+    [we.id],
+  );
   const setsRef = useRef(we.sets);
   useEffect(() => {
     setsRef.current = we.sets;
@@ -85,11 +104,10 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
   }, [allDone]);
   const collapsed = p.mode === 'live' && (collapsedOverride ?? allDone);
 
-  const { onChange } = p;
+  const { onChange, onWorkOn } = p;
   const change = useCallback((fn: (e: WorkoutExercise) => WorkoutExercise) => onChange(we.id, fn), [onChange, we.id]);
 
-  const updateSet = (i: number, patch: Partial<LoggedSet>) =>
-    change((e) => ({ ...e, sets: e.sets.map((s, j) => (j === i ? { ...s, ...patch } : s)) }));
+  const updateSet = (i: number, patch: Partial<LoggedSet>) => change((e) => ({ ...e, sets: e.sets.map((s, j) => (j === i ? { ...s, ...patch } : s)) }));
 
   const toggleDone = (i: number) => {
     const s = we.sets[i];
@@ -99,13 +117,14 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
     }
     const committed = completeSet(s, suggestFor({ sets: we.sets, index: i, prev: prev?.sets, oneRepMax: oneRm, rounding }));
     // Nothing entered and nothing to hint from: don't log an empty set, and stay put.
-    if (timed ? committed.seconds == null : committed.reps == null) {
+    if (!(timed ? committed.seconds : committed.reps)) {
       haptic('warning');
       return;
     }
     // Nothing moves: no focus jump or keyboard (Boostcamp). The next set's hints already show
     // these numbers, so its circle is one tap away. Finishing the exercise folds it, smoothly.
     useKeypad.getState().close();
+    p.onWorkOn?.(we.id, 'check');
     if (p.mode === 'live' && we.sets.every((x, j) => j === i || x.done)) animateLayout();
     change((e) => ({ ...e, sets: e.sets.map((x, j) => (j === i ? committed : x)) }));
     haptic('light');
@@ -123,7 +142,7 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
       for (let i = 0; i < sets.length; i++) {
         if (sets[i].done) continue;
         const c = completeSet(sets[i], suggestFor({ sets, index: i, prev: prev?.sets, oneRepMax: oneRm, rounding }));
-        if (timed ? c.seconds != null : c.reps != null) sets[i] = c;
+        if (timed ? c.seconds : c.reps) sets[i] = c;
       }
       return { ...e, sets };
     });
@@ -143,6 +162,8 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
       const later = sets.findIndex((x, j) => j > i && !x.done);
       const following: [string, Field] | undefined = field === 'weight' ? [setId, second] : later >= 0 ? [sets[later].id, 'weight'] : undefined;
       const value = sets[i][field];
+      // Fixing a number in a checked set (e.g. an earlier exercise) isn't moving on to it.
+      if (!sets[i].done) onWorkOn?.(we.id, 'open');
       const unitName = ex?.bodyweight ? `+${unit}` : unit === 'lb' ? 'lbs' : 'kg';
       useKeypad.getState().open(
         {
@@ -161,7 +182,7 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
         value == null ? '' : fmtNum(value),
       );
     },
-    [timed, ex?.bodyweight, unit, we.id, change],
+    [timed, ex?.bodyweight, unit, we.id, change, onWorkOn],
   );
 
   const copyPrevious = (i: number) => {
@@ -230,7 +251,7 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
           animateLayout();
           setCollapsedOverride(false);
         }}
-        style={[styles.card, p.supersetLabel ? styles.superset : null]}
+        style={[styles.card, p.embedded && styles.embedded]}
       >
         {header}
       </Pressable>
@@ -238,12 +259,7 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
   }
 
   return (
-    <View style={[styles.card, (activeOpen != null || p.upNext) && styles.cardActive, p.supersetLabel ? styles.superset : null]} testID={`exercise-card-${p.index}`}>
-      {p.supersetLabel && (
-        <Txt size={11} weight="800" color={C.accentText} style={{ letterSpacing: 0.6, paddingHorizontal: 6 }}>
-          {p.supersetLabel}
-        </Txt>
-      )}
+    <View style={[styles.card, p.embedded ? styles.embedded : (activeOpen != null || p.upNext) && styles.cardActive]} testID={`exercise-card-${p.index}`}>
       {header}
 
       {we.instructions ? (
@@ -312,7 +328,12 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
                   </View>
                 )}
               </Pressable>
-              <Pressable testID={`prev-${p.index}-${i}`} accessibilityLabel={pl.top === '—' ? 'No previous' : `Copy previous ${pl.top}`} onPress={() => copyPrevious(i)} style={styles.colPrev}>
+              <Pressable
+                testID={`prev-${p.index}-${i}`}
+                accessibilityLabel={pl.top === '—' ? 'No previous' : `Copy previous ${pl.top}`}
+                onPress={() => copyPrevious(i)}
+                style={styles.colPrev}
+              >
                 <Txt size={14} style={{ textAlign: 'center' }} numberOfLines={1}>
                   {pl.top}
                 </Txt>
@@ -347,28 +368,28 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
                 <View style={styles.pillDivider} />
                 {timed ? (
                   <SetField
-                  fieldId={`${we.id}:${s.id}:seconds`}
-                  testID={`seconds-${p.index}-${i}`}
-                  label={`Set ${i + 1} seconds`}
-                  value={s.seconds}
-                  hint={sug.seconds}
-                  onPress={() => openField(s.id, 'seconds')}
-                  viewRef={(v) => {
-                    fieldRefs.current.set(`${s.id}:seconds`, v);
-                  }}
-                />
+                    fieldId={`${we.id}:${s.id}:seconds`}
+                    testID={`seconds-${p.index}-${i}`}
+                    label={`Set ${i + 1} seconds`}
+                    value={s.seconds}
+                    hint={sug.seconds}
+                    onPress={() => openField(s.id, 'seconds')}
+                    viewRef={(v) => {
+                      fieldRefs.current.set(`${s.id}:seconds`, v);
+                    }}
+                  />
                 ) : (
                   <SetField
-                  fieldId={`${we.id}:${s.id}:reps`}
-                  testID={`reps-${p.index}-${i}`}
-                  label={`Set ${i + 1} reps`}
-                  value={s.reps}
-                  hint={sug.reps}
-                  onPress={() => openField(s.id, 'reps')}
-                  viewRef={(v) => {
-                    fieldRefs.current.set(`${s.id}:reps`, v);
-                  }}
-                />
+                    fieldId={`${we.id}:${s.id}:reps`}
+                    testID={`reps-${p.index}-${i}`}
+                    label={`Set ${i + 1} reps`}
+                    value={s.reps}
+                    hint={sug.reps}
+                    onPress={() => openField(s.id, 'reps')}
+                    viewRef={(v) => {
+                      fieldRefs.current.set(`${s.id}:reps`, v);
+                    }}
+                  />
                 )}
               </View>
               <Pressable
@@ -379,7 +400,10 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
                 onPress={() => toggleDone(i)}
                 style={styles.colCheck}
               >
-                <View testID={upNextIndex === i ? `up-next-${p.index}` : undefined} style={[styles.check, (active || upNextIndex === i) && styles.checkActive, s.done && styles.checkOn]}>
+                <View
+                  testID={upNextIndex === i ? `up-next-${p.index}` : undefined}
+                  style={[styles.check, (active || upNextIndex === i) && styles.checkActive, s.done && styles.checkOn]}
+                >
                   {s.done && <Ionicons name="checkmark" size={18} color={C.onAccent} />}
                 </View>
               </Pressable>
@@ -398,7 +422,13 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
           <Txt weight="600">Swap</Txt>
         </Pressable>
         <View style={{ flex: 1 }} />
-        <Pressable testID={`exercise-menu-${p.index}`} accessibilityLabel="Exercise options" hitSlop={8} onPress={() => p.onMenu(p.index)} style={styles.footBtn}>
+        <Pressable
+          testID={`exercise-menu-${p.index}`}
+          accessibilityLabel="Exercise options"
+          hitSlop={8}
+          onPress={() => p.onMenu(p.index)}
+          style={styles.footBtn}
+        >
           <Ionicons name="ellipsis-horizontal" size={20} color={C.text} />
         </Pressable>
       </View>
@@ -442,27 +472,53 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
   );
 });
 
-const styles = themed(() => StyleSheet.create({
-  card: { backgroundColor: C.surface, borderRadius: R.lg, paddingVertical: 14, paddingHorizontal: 12, gap: 8, borderWidth: 1.5, borderColor: 'transparent' },
-  cardActive: { borderColor: C.orange },
-  superset: { borderLeftWidth: 3, borderLeftColor: C.accent },
-  head: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 6, paddingVertical: 4 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, gap: 4 },
-  hdr: { fontSize: 13, color: C.textDim, textAlign: 'center' },
-  swipeDelete: { width: 76, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', gap: 2, borderRadius: R.sm, marginLeft: 6 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 58, backgroundColor: C.surface, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border },
-  colSet: { width: 28, alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch' },
-  colPrev: { flex: 1.2, justifyContent: 'center', alignSelf: 'stretch' },
-  colTarget: { flex: 1.15, justifyContent: 'center' },
-  colPill: { width: 104 },
-  pill: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface2, borderRadius: R.sm, borderWidth: 1.5, borderColor: 'transparent', height: 38 },
-  pillActive: { borderColor: C.orange },
-  pillDivider: { width: 1, alignSelf: 'stretch', marginVertical: 6, backgroundColor: C.border },
-  colCheck: { width: 40, alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch' },
-  typeBadge: { width: 22, height: 22, borderRadius: 5, alignItems: 'center', justifyContent: 'center' },
-  check: { width: 30, height: 30, borderRadius: 15, borderWidth: 2, borderColor: C.textFaint, alignItems: 'center', justifyContent: 'center' },
-  checkActive: { borderColor: C.orange },
-  checkOn: { backgroundColor: C.accent, borderColor: C.accent },
-  footer: { flexDirection: 'row', alignItems: 'center', gap: 20, paddingTop: 10, paddingHorizontal: 4, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border },
-  footBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 4 },
-}));
+const styles = themed(() =>
+  StyleSheet.create({
+    card: { backgroundColor: C.surface, borderRadius: R.lg, paddingVertical: 14, paddingHorizontal: 12, gap: 8, borderWidth: 1.5, borderColor: 'transparent' },
+    cardActive: { borderColor: C.orange },
+    embedded: { backgroundColor: 'transparent', borderWidth: 0, borderRadius: 0, paddingHorizontal: 0, paddingVertical: 0 },
+    head: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 6, paddingVertical: 4 },
+    headerRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, gap: 4 },
+    hdr: { fontSize: 13, color: C.textDim, textAlign: 'center' },
+    swipeDelete: { width: 76, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', gap: 2, borderRadius: R.sm, marginLeft: 6 },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      minHeight: 58,
+      backgroundColor: C.surface,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: C.border,
+    },
+    colSet: { width: 28, alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch' },
+    colPrev: { flex: 1.2, justifyContent: 'center', alignSelf: 'stretch' },
+    colTarget: { flex: 1.15, justifyContent: 'center' },
+    colPill: { width: 104 },
+    pill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: C.surface2,
+      borderRadius: R.sm,
+      borderWidth: 1.5,
+      borderColor: 'transparent',
+      height: 38,
+    },
+    pillActive: { borderColor: C.orange },
+    pillDivider: { width: 1, alignSelf: 'stretch', marginVertical: 6, backgroundColor: C.border },
+    colCheck: { width: 40, alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch' },
+    typeBadge: { width: 22, height: 22, borderRadius: 5, alignItems: 'center', justifyContent: 'center' },
+    check: { width: 30, height: 30, borderRadius: 15, borderWidth: 2, borderColor: C.textFaint, alignItems: 'center', justifyContent: 'center' },
+    checkActive: { borderColor: C.orange },
+    checkOn: { backgroundColor: C.accent, borderColor: C.accent },
+    footer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 20,
+      paddingTop: 10,
+      paddingHorizontal: 4,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: C.border,
+    },
+    footBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 4 },
+  }),
+);

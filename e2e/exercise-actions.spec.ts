@@ -42,6 +42,25 @@ test.describe('exercise actions', () => {
     await expect(tid(page, 'done-mark-0')).toBeVisible();
   });
 
+  test('superset with any exercise of the day: it moves up next to it', async ({ page }) => {
+    await openWith(page);
+    await tid(page, 'start-next-workout').click(); // PPLUA Push
+    await tid(page, 'exercise-menu-0').click();
+    await tid(page, 'menu-superset').click();
+    const third = (await tid(page, 'superset-pick-2').innerText()).trim().split('\n').pop()!; // the list shows the day's exercises
+    await tid(page, 'superset-pick-2').click();
+    // One superset card with a tab per exercise; the moved one is the second tab.
+    await expect(tid(page, 'superset-box-0')).toContainText('SUPERSET A');
+    await expect(tid(page, 'superset-tab-1')).toContainText(third.replace(/\s*\(.*\)$/, ''));
+    // Tap B's tab (retrying while the list sheet fades out over it).
+    await expect(async () => {
+      await tid(page, 'superset-tab-1').click();
+      await expect(tid(page, 'superset-tab-1')).toHaveAttribute('aria-selected', 'true', { timeout: 500 });
+    }).toPass();
+    await expect(tid(page, 'exercise-card-1')).toContainText(third);
+    await expect(tid(page, 'exercise-card-2')).not.toContainText('SUPERSET');
+  });
+
   test('reorder exercises from the Reorder sheet', async ({ page }) => {
     await openWith(page);
     await tid(page, 'start-next-workout').click();

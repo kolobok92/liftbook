@@ -59,3 +59,18 @@ export function dedupeImported(
 export function trainingMax(oneRepMaxes: Record<string, number>, history: Workout[], exerciseId: string): number | undefined {
   return oneRepMaxes[exerciseId] || recordsFor(history, exerciseId).bestE1rm || undefined;
 }
+
+/**
+ * Put `otherId` in a superset with `rowId` (joining rowId's superset if it has one, leaving
+ * its own), and move it to sit right after that group so the pair is done back to back.
+ */
+export function supersetWith<T extends { id: string; superset?: string }>(rows: T[], rowId: string, otherId: string, newGroup: string): T[] {
+  const me = rows.find((r) => r.id === rowId);
+  const other = rows.find((r) => r.id === otherId);
+  if (!me || !other || me === other) return rows;
+  const group = me.superset && rows.some((r) => r !== me && r.superset === me.superset) ? me.superset : newGroup;
+  const rest = rows.filter((r) => r !== other).map((r) => (r === me ? { ...r, superset: group } : r));
+  const lastOfGroup = rest.reduce((at, r, i) => (r.superset === group ? i : at), -1);
+  rest.splice(lastOfGroup + 1, 0, { ...other, superset: group });
+  return rest;
+}

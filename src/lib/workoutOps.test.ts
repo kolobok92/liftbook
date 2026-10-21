@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { makeBackup, mergePersisted, migrate, parseBackup } from './persistence';
 import type { ActiveProgram, Exercise, LoggedSet, Settings, Workout } from './types';
-import { convertWorkoutUnit, dedupeImported, finishWorkout, keepCompletedSets, markSlotDone, trainingMax, unmarkWorkout } from './workoutOps';
+import { convertWorkoutUnit, dedupeImported, finishWorkout, keepCompletedSets, markSlotDone, supersetWith, trainingMax, unmarkWorkout } from './workoutOps';
 
 let n = 0;
 const set = (weight: number | null, reps: number | null, done = true): LoggedSet => ({ id: `s${n++}`, type: 'normal', weight, reps, rpe: null, done });
@@ -100,5 +100,22 @@ describe('backups', () => {
     expect(parseBackup('not json')).toMatchObject({ ok: false });
     expect(parseBackup(JSON.stringify({ app: 'strong', history: [], programs: [] }))).toMatchObject({ ok: false });
     expect(parseBackup(JSON.stringify({ app: 'liftbook', version: 999, history: [], programs: [] }))).toMatchObject({ ok: false, error: expect.stringContaining('newer version') });
+  });
+});
+
+describe('superset with any exercise', () => {
+  const rows = (...ids: string[]) => ids.map((id) => ({ id, superset: undefined as string | undefined }));
+  const view = (r: { id: string; superset?: string }[]) => r.map((x) => x.id + (x.superset ? `:${x.superset}` : '')).join(' ');
+  it('pairs with a later exercise and moves it right below', () => {
+    expect(view(supersetWith(rows('a', 'b', 'c', 'd'), 'a', 'c', 'g'))).toBe('a:g c:g b d');
+  });
+  it('pairs with an earlier exercise, and a third joins the same group', () => {
+    const two = supersetWith(rows('a', 'b', 'c', 'd'), 'd', 'a', 'g');
+    expect(view(two)).toBe('b c d:g a:g');
+    expect(view(supersetWith(two, 'd', 'b', 'h'))).toBe('c d:g a:g b:g');
+  });
+  it('an exercise leaves its old superset to join the new one', () => {
+    const r = [{ id: 'a', superset: 'x' }, { id: 'b', superset: 'x' }, { id: 'c' }];
+    expect(view(supersetWith(r, 'c', 'b', 'g'))).toBe('a:x c:g b:g');
   });
 });

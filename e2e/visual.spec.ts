@@ -44,6 +44,16 @@ async function snap(page: Page, name: string, ready: ReturnType<Page['getByTestI
   await expect(ready).toBeVisible();
   await expect(page).toHaveScreenshot(`${name}.png`, { ...opts, mask: [page.getByTestId('workout-elapsed')] });
 }
+/** The pad scrolls the edited field above itself: wait until it's there (fails if it never is). */
+async function aboveKeypad(page: Page, testId: string) {
+  await expect
+    .poll(async () => {
+      const r = await page.getByTestId(testId).boundingBox();
+      const k = await page.getByTestId('keypad').boundingBox();
+      return !!r && !!k && r.y + r.height <= k.y;
+    }, { timeout: 5000 })
+    .toBe(true);
+}
 /** Snapshot one element (e.g. a card) so scroll position can't change what's captured. */
 async function snapEl(el: ReturnType<Page['getByTestId']>, name: string) {
   await el.scrollIntoViewIfNeeded();
@@ -76,8 +86,18 @@ test.describe('visual @visual', () => {
     await tid(page, 'check-0-0').click();
     // Set 2's weight on the in-app keypad: selected (the first key replaces it), pill outlined.
     await tid(page, 'weight-0-1').click();
+    await aboveKeypad(page, 'set-row-0-1');
     await snapEl(tid(page, 'set-row-0-1'), 'tracker-active-set');
     await snapEl(tid(page, 'keypad'), 'tracker-keypad');
+  });
+
+  test('tracker: a superset is one card with exercise tabs', async ({ page }) => {
+    await open(page);
+    await tid(page, 'start-next-workout').click();
+    await tid(page, 'exercise-menu-0').click();
+    await tid(page, 'menu-superset').click();
+    await tid(page, 'superset-pick-1').click();
+    await snapEl(tid(page, 'superset-box-0'), 'tracker-superset');
   });
 
   test('tracker: collapsed exercise and note', async ({ page }) => {
@@ -129,6 +149,7 @@ test.describe('visual light @visual', () => {
     await tid(page, 'start-next-workout').click();
     await tid(page, 'check-0-0').click();
     await tid(page, 'weight-0-1').click();
+    await aboveKeypad(page, 'set-row-0-1');
     await snapEl(tid(page, 'set-row-0-1'), 'light-tracker-active-set');
     await snapEl(tid(page, 'keypad'), 'light-tracker-keypad');
     await tid(page, 'keypad-hide').click();

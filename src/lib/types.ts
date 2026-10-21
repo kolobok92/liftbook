@@ -144,6 +144,12 @@ export type Workout = {
   exercises: WorkoutExercise[];
   /** Weight unit the workout was logged in. */
   unit: Unit;
+  /** Exercise row last worked on (a set checked or a field opened), so going out of order
+   * keeps the lock screen and the current-set marker on it. See currentRow(). */
+  currentRowId?: string;
+  /** How it became current: a set checked (a superset moves on to its partner) or a field
+   * opened (you're on it). */
+  currentBy?: 'check' | 'open';
 };
 
 export type ActiveProgram = {

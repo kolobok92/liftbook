@@ -205,6 +205,87 @@ describe('tracker', () => {
     expect(tick).toHaveBeenCalledTimes(4);
   });
 
+  it('the marker follows an exercise started out of order', async () => {
+    await startWith([BENCH, BENCH], { sets: 2 });
+    expect(within(el('check-0-0')).queryByTestId('up-next-0')).toBeTruthy(); // untouched: the first
+    await type('weight-1-0', '60'); // start with exercise 2
+    await type('reps-1-0', '10');
+    await fireEvent.press(el('check-1-0'));
+    expect(useStore.getState().active!.currentRowId).toBe('row1');
+    expect(within(el('check-1-1')).queryByTestId('up-next-1')).toBeTruthy();
+    expect(screen.queryByTestId('up-next-0')).toBeNull();
+    await fireEvent.press(el('check-1-1')); // exercise 2 done: back to exercise 1
+    expect(within(el('check-0-0')).queryByTestId('up-next-0')).toBeTruthy();
+  });
+
+  it('the pad closes when the field it types into goes away (set or exercise deleted, swapped to timed)', async () => {
+    await startWith([BENCH, BENCH], { sets: 2 });
+    const drop = (fn: (w: Workout) => Workout) => act(async () => useStore.getState().updateActive(fn));
+    await fireEvent.press(el('weight-0-1'));
+    await drop((w) => ({ ...w, exercises: [{ ...w.exercises[0], sets: w.exercises[0].sets.slice(0, 1) }, w.exercises[1]] }));
+    expect(screen.queryByTestId('keypad')).toBeNull();
+    await fireEvent.press(el('reps-0-0'));
+    await drop((w) => ({ ...w, exercises: [{ ...w.exercises[0], exerciseId: 'plank' }, w.exercises[1]] }));
+    expect(screen.queryByTestId('keypad')).toBeNull(); // would have kept typing into hidden reps
+    await fireEvent.press(el('weight-1-0'));
+    await drop((w) => ({ ...w, exercises: [w.exercises[0]] }));
+    expect(screen.queryByTestId('keypad')).toBeNull();
+  });
+
+  it('zero reps is not a set: the circle does nothing', async () => {
+    await startWith([BENCH], { sets: 1 });
+    await type('reps-0-0', '0');
+    await fireEvent.press(el('check-0-0'));
+    expect(sets()[0].done).toBe(false);
+  });
+
+  it('a superset alternates A1, B1, A2…; fixing an earlier exercise doesn’t move the marker', async () => {
+    await startWith([BENCH, BENCH, BENCH], { sets: 2 });
+    await act(async () => useStore.getState().updateActive((w) => ({ ...w, exercises: w.exercises.map((e, i) => (i < 2 ? { ...e, superset: 'g' } : e)) })));
+    const marked = () => [0, 1, 2].find((i) => screen.queryByTestId(`up-next-${i}`));
+    await log(0, '50', '8');
+    expect(marked()).toBe(1); // B1 next
+    await type('weight-1-0', '40');
+    await type('reps-1-0', '10');
+    await fireEvent.press(el('check-1-0'));
+    expect(marked()).toBe(0); // then A2
+    await fireEvent.press(el('check-0-1'));
+    await fireEvent.press(el('check-1-1'));
+    expect(marked()).toBe(2); // superset done: the next exercise
+    await fireEvent.press(el('collapse-0'));
+    await fireEvent.press(el('weight-0-0')); // fix a checked set of exercise 1
+    expect(marked()).toBe(2);
+  });
+
+  it('a superset is one card with a tab per exercise; the tab follows the set you’re due, a tapped tab holds until the next check', async () => {
+    await startWith([BENCH, BENCH], { sets: 2 });
+    await act(async () => useStore.getState().updateActive((w) => ({ ...w, exercises: w.exercises.map((e) => ({ ...e, superset: 'g' })) })));
+    const selected = () => [0, 1].find((i) => el(`superset-tab-${i}`).props.accessibilityState?.selected);
+    expect(selected()).toBe(0);
+    expect(screen.queryByTestId('set-row-1-0')).toBeNull(); // only the chosen exercise's sets
+    await log(0, '50', '8');
+    expect(selected()).toBe(1); // flipped to B for B1
+    await fireEvent.press(el('superset-tab-0')); // peek back at A
+    expect(selected()).toBe(0);
+    await fireEvent.press(el('superset-tab-1'));
+    await type('weight-1-0', '40');
+    await type('reps-1-0', '10');
+    await fireEvent.press(el('check-1-0'));
+    expect(selected()).toBe(0); // A2 next
+    expect(el('superset-tab-1')).toHaveTextContent(/1\/2/); // B's progress
+  });
+
+  it('starting a superset with B: opening its field stays on B (keypad open); its check moves to A', async () => {
+    await startWith([BENCH, BENCH], { sets: 2 });
+    await act(async () => useStore.getState().updateActive((w) => ({ ...w, exercises: w.exercises.map((e) => ({ ...e, superset: 'g' })) })));
+    await fireEvent.press(el('superset-tab-1'));
+    await type('weight-1-0', '40'); // the keypad stays on B's field
+    expect(useStore.getState().active!.exercises[1].sets[0].weight).toBe(40);
+    await type('reps-1-0', '10');
+    await fireEvent.press(el('check-1-0'));
+    expect(el('superset-tab-0').props.accessibilityState?.selected).toBe(true);
+  });
+
   it('an empty circle with nothing to hint from does nothing', async () => {
     await startWith([BENCH]);
     await fireEvent.press(el('check-0-0'));

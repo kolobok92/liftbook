@@ -392,3 +392,33 @@ export function carriedNote(history: Workout[], exerciseId: string): string {
 export function carryNotes(w: Workout, history: Workout[]): Workout {
   return { ...w, exercises: w.exercises.map((e) => (e.notes ? e : { ...e, notes: carriedNote(history, e.exerciseId) })) };
 }
+
+/**
+ * The exercise you're on: the one last worked on while it has unchecked sets; once it's
+ * finished, the next unfinished exercise after it (wrapping to the top); before anything is
+ * touched, the first unfinished one. Undefined when every set is checked.
+ */
+export function currentRow(w: Workout): WorkoutExercise | undefined {
+  const open = (e: WorkoutExercise) => e.sets.some((s) => !s.done);
+  const exs = w.exercises;
+  const at = exs.findIndex((e) => e.id === w.currentRowId);
+  if (at < 0) return exs.find(open);
+  const here = exs[at];
+  // Opened a field in an unfinished exercise: you're on it.
+  if (w.currentBy === 'open' && open(here)) return here;
+  // After a check, a superset alternates (A1, B1, A2, B2…): the member with the fewest sets
+  // done, the next one after this in order on a tie.
+  const group = here.superset ? exs.filter((e) => e.superset === here.superset) : [];
+  if (group.length > 1) {
+    const g = group.indexOf(here);
+    const order = group.slice(g + 1).concat(group.slice(0, g + 1));
+    const doneCount = (e: WorkoutExercise) => e.sets.filter((s) => s.done).length;
+    const pick = order.filter(open).sort((a, b) => doneCount(a) - doneCount(b))[0];
+    if (pick) return pick;
+  }
+  for (let k = 0; k < exs.length; k++) {
+    const e = exs[(at + k) % exs.length];
+    if (open(e)) return e;
+  }
+  return undefined;
+}
