@@ -82,7 +82,14 @@ describe('persistence', () => {
 });
 
 describe('backups', () => {
-  const data = { programs: [{ id: 'p' }], history: [{ id: 'w' }], customExercises: [], templates: [], oneRepMaxes: { bench: 225 }, settings: { unit: 'kg' as const } };
+  const data = {
+    programs: [{ id: 'p' }],
+    history: [{ id: 'w', notes: 'Slept badly', exercises: [{ exerciseId: 'leg-press', notes: 'Set at 3 depth', sets: [] }] }],
+    customExercises: [],
+    templates: [],
+    oneRepMaxes: { bench: 225 },
+    settings: { unit: 'kg' as const },
+  };
   it('round-trips, and old (unversioned) backups go through migrate', () => {
     const back = parseBackup(makeBackup(data, new Date('2026-10-20T10:00:00Z')));
     expect(back).toEqual({ ok: true, exportedAt: '2026-10-20T10:00:00.000Z', data: { ...data, activeProgram: undefined } });

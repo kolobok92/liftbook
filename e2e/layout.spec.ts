@@ -16,7 +16,7 @@ test.describe('layout', () => {
     await tid(page, 'workout-note').fill('Felt strong today.\nSlept 8h.');
     await expectIconAligned(page, 'workout-note'); // multi-line
 
-    await expectIconAligned(page, 'last-note-0'); // wraps to two lines
+    await expectIconAligned(page, 'note-0'); // the carried-over note, wraps to two lines
 
     await tid(page, 'exercise-menu-0').click();
     await tid(page, 'menu-note').click();

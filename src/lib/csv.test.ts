@@ -61,4 +61,17 @@ describe('importCsv', () => {
     ]);
   });
 
+  it('keeps exercise and workout notes through export and import', () => {
+    const csv = [
+      'Date,Workout Name,Exercise Name,Set Order,Weight,Reps,Notes,Workout Notes',
+      '2024-02-01 10:00:00,Legs,Leg Press,1,360,10,"Set at 3 depth",Slept badly',
+      '2024-02-01 10:00:00,Legs,Leg Press,2,360,10,"Set at 3 depth",Slept badly',
+      '2024-02-01 10:00:00,Legs,Leg Extension,1,120,12,"Seat at 3, rotation at 1",Slept badly',
+    ].join('\n');
+    const again = importCsv(exportCsv(importCsv(csv, BUILTIN_EXERCISES, 'lb').workouts, BUILTIN_BY_ID), BUILTIN_EXERCISES, 'lb');
+    const w = again.workouts[0];
+    expect(w.exercises.map((e) => e.notes)).toEqual(['Set at 3 depth', 'Seat at 3, rotation at 1']);
+    expect(w.notes).toBe('Slept badly');
+  });
+
 });

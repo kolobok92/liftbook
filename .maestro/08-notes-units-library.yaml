@@ -69,9 +69,8 @@ appId: ${APP_ID}
 - assertVisible:
     id: "weight-0-0"
     text: 'Set 1 weight: 45\.4'
+# Last session's note carried over by itself (Boostcamp), no tap needed.
 - assertVisible: '.*Pause on chest.*'
-- tapOn:
-    id: "last-note-0"
 - takeScreenshot: 08-repeat-kg-autofill
 - tapOn:
     id: "discard-workout"

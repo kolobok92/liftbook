@@ -61,8 +61,8 @@ test.describe('workout tracker', () => {
     expect(await setRow(page, 0, 2)).toMatchObject({ previous: '25lb × 12', weightHint: '', repsHint: '' });
     expect((await setRow(page, 0, 3)).previous).toBe('25lb × 11 RPE 9');
 
-    // Last session's note is offered.
-    await expect(tid(page, 'last-note-0')).toContainText('Pause at the top');
+    // Last session's note carries over as this session's note (Boostcamp).
+    await expect(tid(page, 'note-0').first()).toContainText('Pause at the top');
 
     // One tap on set 1's empty circle logs last session's set 1.
     await tid(page, 'check-0-0').click();

@@ -10,7 +10,7 @@ import { useStore } from '@/lib/store';
 import { completeSet, emptySet, findPrevious, hintFor, previousSetFor, suggestFor, type Suggestion } from '@/lib/tracking';
 import type { LoggedSet, SetType, Unit, WorkoutExercise } from '@/lib/types';
 import { C, R, SET_TYPE_COLOR, themed } from '@/lib/theme';
-import { IconLine, LastNote } from '../NoteField';
+import { IconLine } from '../NoteField';
 import { MenuItem, Sheet, Txt, haptic } from '../ui';
 import { CardRegistryContext } from './focusChain';
 import { useKeypad } from './keypadStore';
@@ -252,12 +252,6 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
             {we.instructions}
           </Txt>
         </Pressable>
-      ) : null}
-
-      {!we.notes && prev?.exercise.notes ? (
-        <View style={{ paddingHorizontal: 6 }}>
-          <LastNote testID={`last-note-${p.index}`} text={prev.exercise.notes} onPress={() => change((e) => ({ ...e, notes: prev.exercise.notes }))} />
-        </View>
       ) : null}
 
       {we.notes ? (

@@ -1,9 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ReactNode } from 'react';
-import { Platform, Pressable, TextInput, View, type TextStyle } from 'react-native';
+import { Platform, TextInput, View, type TextStyle } from 'react-native';
 import { C } from '@/lib/theme';
 import type { IconName } from './ui';
-import { Txt } from './ui';
 
 /**
  * Icon + text on a shared line grid: the icon sits in a box one line tall, so it's centered
@@ -71,18 +70,5 @@ export function NoteField({
         style={[{ color: C.text, fontSize: size, lineHeight, minHeight: lineHeight, fontStyle: 'italic', padding: 0, margin: 0, textAlignVertical: 'top' }, noRing]}
       />
     </IconLine>
-  );
-}
-
-/** Tappable "Last time: …" hint on the same grid. */
-export function LastNote({ text, onPress, testID }: { text: string; onPress: () => void; testID?: string }) {
-  return (
-    <Pressable testID={testID} onPress={onPress} accessibilityLabel={`Use last note: ${text}`}>
-      <IconLine icon="time-outline" size={13} lineHeight={19} testID={testID}>
-        <Txt faint size={13} style={{ lineHeight: 19, fontStyle: 'italic' }} numberOfLines={2}>
-          Last time: {text}
-        </Txt>
-      </IconLine>
-    </Pressable>
   );
 }

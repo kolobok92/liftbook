@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { fmtSet, newSetTarget } from './calc';
 import {
   autofillWorkout,
+  carriedNote,
+  carryNotes,
   completeSet,
   detectPRs,
   emptySet,
@@ -204,5 +206,21 @@ describe('hints and the circle (as Boostcamp, from a screen recording)', () => {
     const cur = [emptySet()];
     const c = completeSet(cur[0], suggestFor({ sets: cur, index: 0, prev: undefined, rounding: 5 }));
     expect([c.weight, c.reps]).toEqual([null, null]);
+  });
+});
+
+describe('notes carry over (Boostcamp)', () => {
+  const legPress = (notes: string, startedAt: number): Workout => workout(startedAt, [{ id: 'e', exerciseId: 'leg-press', notes, sets: [set(360, 10)] }]);
+  it('each new session starts with the exercise’s latest note; a deleted note stays deleted', () => {
+    const h = [legPress('Set at 2 depth', 1000), legPress('Set at 3 depth', 2000)];
+    expect(carriedNote(h, 'leg-press')).toBe('Set at 3 depth');
+    const next = carryNotes(workout(3000, [{ id: 'n', exerciseId: 'leg-press', notes: '', sets: [] }], { endedAt: undefined }), h);
+    expect(next.exercises[0].notes).toBe('Set at 3 depth');
+    expect(carriedNote([...h, legPress('', 3000)], 'leg-press')).toBe(''); // cleared last time
+    expect(carriedNote(h, 'squat')).toBe('');
+  });
+  it('a note typed in the new session is kept, not overwritten', () => {
+    const next = carryNotes(workout(3000, [{ id: 'n', exerciseId: 'leg-press', notes: 'Seat 4', sets: [] }], { endedAt: undefined }), [legPress('Set at 3 depth', 1000)]);
+    expect(next.exercises[0].notes).toBe('Seat 4');
   });
 });

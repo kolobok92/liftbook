@@ -6,7 +6,8 @@ import { exerciseName, useExercises } from '@/lib/hooks';
 import { SwipeDeleteAction } from './SwipeDelete';
 import { supersetLabels, uid } from '@/lib/calc';
 import { useExercisePicker } from '@/lib/picker';
-import { emptySet } from '@/lib/tracking';
+import { useStore } from '@/lib/store';
+import { carriedNote, emptySet } from '@/lib/tracking';
 import type { Workout, WorkoutExercise } from '@/lib/types';
 import { C, R, themed } from '@/lib/theme';
 import { Button, MenuItem, Sheet, confirm } from '../ui';
@@ -14,8 +15,9 @@ import { ExerciseCard } from './ExerciseCard';
 import { CardRegistryContext, useCardRegistryValue } from './focusChain';
 import { ReorderSheet } from './ReorderSheet';
 
+/** An added exercise, with its note from last time (e.g. machine settings). */
 function newWorkoutExercise(exerciseId: string): WorkoutExercise {
-  return { id: uid(), exerciseId, notes: '', sets: [emptySet(), emptySet(), emptySet()] };
+  return { id: uid(), exerciseId, notes: carriedNote(useStore.getState().history, exerciseId), sets: [emptySet(), emptySet(), emptySet()] };
 }
 
 /** Exercise list + add/menus, shared by the live tracker and editing a logged workout. */
@@ -55,7 +57,14 @@ export function WorkoutEditor({ workout, update, mode }: { workout: Workout; upd
       pickExercises({ multi: false }, ([newId]) =>
         setExercises((exs) =>
           exs.map((x) =>
-            x.id === id ? { ...x, exerciseId: newId, sets: x.sets.map((s) => ({ ...s, weight: s.done ? s.weight : null, reps: s.done ? s.reps : null })) } : x,
+            x.id === id
+              ? {
+                  ...x,
+                  exerciseId: newId,
+                  notes: carriedNote(useStore.getState().history, newId), // the new exercise's own note
+                  sets: x.sets.map((s) => ({ ...s, weight: s.done ? s.weight : null, reps: s.done ? s.reps : null })),
+                }
+              : x,
           ),
         ),
       ),

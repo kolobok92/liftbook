@@ -8,6 +8,7 @@ import { mergePersisted, migrate, PERSIST_VERSION } from './persistence';
 import { debouncedStorage } from './storage';
 import {
   autofillWorkout,
+  carryNotes,
   detectPRs,
   firstIncompleteSlot,
   newWorkout,
@@ -115,7 +116,8 @@ export const useStore = create<State & Actions>()(
       const oneRmFor = (id: string) => trainingMax(get().oneRepMaxes, get().history, id);
       const begin = (w: Workout) => {
         const s = get().settings;
-        const ready = s.autofillValues ? autofillWorkout(w, get().history, oneRmFor, s.plateRounding[s.unit]) : w;
+        const withNotes = carryNotes(w, get().history);
+        const ready = s.autofillValues ? autofillWorkout(withNotes, get().history, oneRmFor, s.plateRounding[s.unit]) : withNotes;
         set({ active: ready });
       };
       return {

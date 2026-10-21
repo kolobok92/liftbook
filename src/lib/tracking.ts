@@ -372,3 +372,23 @@ export function templateFromWorkout(w: Workout, name: string, now: number): Temp
     })),
   };
 }
+
+/**
+ * The note an exercise carries into a new session (Boostcamp keeps notes like machine settings
+ * from one session to the next): its note in the latest finished workout that had the exercise.
+ * Deleting a note stops it carrying, since that session saves it empty.
+ */
+export function carriedNote(history: Workout[], exerciseId: string): string {
+  let latest: { at: number; notes: string } | undefined;
+  for (const w of history) {
+    if (!w.endedAt) continue;
+    const e = w.exercises.find((x) => x.exerciseId === exerciseId);
+    if (e && (!latest || w.startedAt > latest.at)) latest = { at: w.startedAt, notes: e.notes };
+  }
+  return latest?.notes ?? '';
+}
+
+/** A new workout with each exercise's note carried over from last time (empty notes only). */
+export function carryNotes(w: Workout, history: Workout[]): Workout {
+  return { ...w, exercises: w.exercises.map((e) => (e.notes ? e : { ...e, notes: carriedNote(history, e.exerciseId) })) };
+}
