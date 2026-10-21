@@ -177,6 +177,46 @@ describe('in-session hints (no history for this set)', () => {
     expect(suggestFor({ sets: withPrev, index: 2, prev, rounding: 5 })).toMatchObject({ weight: 100, reps: 5 }); // beyond last time: set above
   });
 
+  it('a number you change carries down to the sets below, instead of last session (Boostcamp)', () => {
+    const prev = [set(360, 10), set(360, 10), set(450, 8), set(450, 8)];
+    const cur = [emptySet(), emptySet(), emptySet(), emptySet()];
+    const hints = () => cur.map((_, i) => suggestFor({ sets: cur, index: i, prev, rounding: 5 })).map((h) => [h.weight, h.reps]);
+    expect(hints()).toEqual([
+      [360, 10],
+      [360, 10],
+      [450, 8],
+      [450, 8],
+    ]);
+    // Typing 385 (reps untouched) into set 1: every set below hints 385; reps keep their history.
+    cur[0] = { ...cur[0], weight: 385 };
+    expect(hints().slice(1)).toEqual([
+      [385, 10],
+      [385, 8],
+      [385, 8],
+    ]);
+    // One tap on set 2's circle logs the carried number, and it keeps carrying.
+    cur[1] = completeSet(cur[1], suggestFor({ sets: cur, index: 1, prev, rounding: 5 }));
+    expect([cur[1].weight, cur[1].reps]).toEqual([385, 10]);
+    expect(hints()[2]).toEqual([385, 8]);
+  });
+
+  it('accepting last session straight down keeps each set on its own history', () => {
+    const prev = [set(360, 10), set(450, 8)];
+    const cur = [emptySet(), emptySet()];
+    cur[0] = completeSet(cur[0], suggestFor({ sets: cur, index: 0, prev, rounding: 5 }));
+    expect(suggestFor({ sets: cur, index: 1, prev, rounding: 5 })).toMatchObject({ weight: 450, reps: 8 });
+    // Typing a number back to what it was last time returns to following history.
+    const edited = [set(400, 10, { done: false }), set(360, 10, { done: false }), emptySet()];
+    const prev3 = [set(360, 10), set(360, 10), set(450, 8)];
+    expect(suggestFor({ sets: edited, index: 2, prev: prev3, rounding: 5 })).toMatchObject({ weight: 450, reps: 8 });
+  });
+
+  it('a % of 1RM weight stays the program’s even when a set above was changed', () => {
+    const t = newSetTarget({ target: { kind: 'reps', reps: 5 }, intensity: { kind: 'pct', pct: 75 } });
+    const cur = [set(200, 5, { done: false }), { ...emptySet(), target: t }];
+    expect(suggestFor({ sets: cur, index: 1, prev: [set(185, 5), set(185, 5)], oneRepMax: 300, rounding: 5 })).toMatchObject({ weight: 225, reps: 5 });
+  });
+
   it('checking an empty set accepts the hinted numbers', () => {
     const cur = [set(12.5, 10, { done: true }), emptySet()];
     expect(completeSet(cur[1], suggestFor({ sets: cur, index: 1, prev: undefined, rounding: 5 }))).toMatchObject({ weight: 12.5, reps: 10, done: true });

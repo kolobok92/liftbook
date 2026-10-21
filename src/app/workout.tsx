@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useRef, useState, type ComponentRef } from 'react';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NoteField } from '@/components/NoteField';
 import { CalcSheet } from '@/components/workout/CalcSheet';
+import { Keypad, KeypadSpacer } from '@/components/workout/Keypad';
 import { WorkoutEditor } from '@/components/workout/WorkoutEditor';
 import { Button, Empty, Txt, confirm, haptic } from '@/components/ui';
 import { completedSetCount, fmtDuration, workoutDurationMs } from '@/lib/calc';
@@ -19,6 +20,8 @@ export default function WorkoutScreen() {
   const programName = program?.name;
   const programMode = program?.mode;
   const insets = useSafeAreaInsets();
+  const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
+  const scrollY = useRef(0);
   const now = useTick(1000, !!active && !active.pausedAt);
   const [calc, setCalc] = useState(false);
 
@@ -87,13 +90,17 @@ export default function WorkoutScreen() {
         </Pressable>
       </View>
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView
-          contentContainerStyle={{ padding: 12, gap: 12, paddingBottom: 60 }}
-          keyboardShouldPersistTaps="handled"
-          automaticallyAdjustKeyboardInsets
-          keyboardDismissMode="interactive"
-        >
+      {/* No keyboard avoidance: set numbers use the in-app keypad, which overlays the list and
+          scrolls it only when the edited field would be hidden (Keypad.tsx). Resizing for the
+          system keyboard as well made the list jump on every set. */}
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={{ padding: 12, gap: 12, paddingBottom: 60 }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        scrollEventThrottle={16}
+        onScroll={(e) => (scrollY.current = e.nativeEvent.contentOffset.y)}
+      >
           <View style={{ gap: 4, paddingHorizontal: 4 }}>
             <TextInput
               testID="workout-name"
@@ -117,8 +124,9 @@ export default function WorkoutScreen() {
           <WorkoutEditor workout={active} update={updateActive} mode="live" />
 
           <Button testID="discard-workout" title="Discard Workout" variant="danger" onPress={discard} />
-        </ScrollView>
-      </KeyboardAvoidingView>
+          <KeypadSpacer />
+      </ScrollView>
+      <Keypad scrollRef={scrollRef} scrollY={scrollY} />
 
 
       <CalcSheet visible={calc} onClose={() => setCalc(false)} />

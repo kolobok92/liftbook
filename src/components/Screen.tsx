@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ComponentRef, ReactNode, RefObject } from 'react';
 import { ScrollView, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from '@/lib/store';
@@ -10,8 +10,15 @@ export function Screen({
   header = false,
   contentStyle,
   scroll = true,
+  overlay,
+  scrollRef,
+  onScrollY,
 }: {
   children: ReactNode;
+  /** Drawn over the page, outside the scroll view (e.g. the set keypad). */
+  overlay?: ReactNode;
+  scrollRef?: RefObject<ComponentRef<typeof ScrollView> | null>;
+  onScrollY?: (y: number) => void;
   /** True when a stack header already handles the top inset. */
   header?: boolean;
   contentStyle?: StyleProp<ViewStyle>;
@@ -23,11 +30,19 @@ export function Screen({
   if (!scroll) return <View style={[{ flex: 1, backgroundColor: C.bg }, pad]}>{children}</View>;
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={pad} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        ref={scrollRef}
+        style={{ flex: 1 }}
+        contentContainerStyle={pad}
+        keyboardShouldPersistTaps="handled"
+        scrollEventThrottle={16}
+        onScroll={onScrollY ? (e) => onScrollY(e.nativeEvent.contentOffset.y) : undefined}
+      >
         {children}
       </ScrollView>
       {/* Opaque status-bar backdrop so content doesn't scroll under the clock. */}
       {!header && <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top, backgroundColor: C.bg }} />}
+      {overlay}
     </View>
   );
 }

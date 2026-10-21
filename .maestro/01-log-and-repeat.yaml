@@ -16,29 +16,39 @@ appId: ${APP_ID}
 - assertVisible: '.*Bench Press \(Barbell\)'
 - takeScreenshot: 02-workout-empty
 
-# Log three sets with the native number pad.
+# Log three sets with the in-app keypad, Boostcamp-style: type set 1, then set 2's hints are
+# set 1's numbers and one tap on its circle logs them; set 3 is typed again.
 - tapOn:
     id: "weight-0-0"
-- inputText: "135"
 - tapOn:
-    id: "reps-0-0"
-- inputText: "8"
+    id: "key-1"
+- tapOn:
+    id: "key-3"
+- tapOn:
+    id: "key-5"
+- tapOn:
+    id: "keypad-next"
+- tapOn:
+    id: "key-8"
 - tapOn:
     id: "check-0-0"
-- tapOn:
+- assertVisible:
     id: "weight-0-1"
-- inputText: "135"
-- tapOn:
-    id: "reps-0-1"
-- inputText: "8"
+    text: "Set 2 weight: 135 suggested"
 - tapOn:
     id: "check-0-1"
 - tapOn:
     id: "weight-0-2"
-- inputText: "140"
+- tapOn:
+    id: "key-1"
+- tapOn:
+    id: "key-4"
+- tapOn:
+    id: "key-0"
 - tapOn:
     id: "reps-0-2"
-- inputText: "6"
+- tapOn:
+    id: "key-6"
 - tapOn:
     id: "check-0-2"
 # All sets done: the card folds into a summary; best set is by estimated 1RM (135×8 > 140×6).

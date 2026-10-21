@@ -1,44 +1,71 @@
 import { describe, expect, it } from '@jest/globals';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { Keypad } from './Keypad';
 import { WorkoutEditor } from './WorkoutEditor';
 import { useStore } from '@/lib/store';
-import type { LoggedSet } from '@/lib/types';
+import type { LoggedSet, Workout } from '@/lib/types';
 
-// The tracker's behavior, without an emulator. What only a device proves (the keyboard, caret and
-// text selection, gestures, navigation, pixels) stays in the Maestro flows.
+// The tracker's behavior, without an emulator. What only a device proves (touch, gestures,
+// navigation, pixels) stays in the Maestro flows.
 
 const BENCH = 'bench-press-barbell';
 
-/** The live tracker's editor, bound to the store like the workout screen does. */
+/** The live tracker's editor and keypad, bound to the store like the workout screen. */
 function Tracker() {
   const active = useStore((s) => s.active);
   const updateActive = useStore((s) => s.updateActive);
-  return active ? <WorkoutEditor workout={active} update={updateActive} mode="live" /> : null;
+  return active ? (
+    <>
+      <WorkoutEditor workout={active} update={updateActive} mode="live" />
+      <Keypad />
+    </>
+  ) : null;
 }
 
 const emptySets = (n: number): LoggedSet[] => Array.from({ length: n }, (_, j) => ({ id: `s${j}`, type: 'normal', weight: null, reps: null, rpe: null, done: false }));
 
-async function startWith(exerciseIds: string[], notes = '') {
+async function startWith(exerciseIds: string[], { notes = '', history = [] as Workout[], sets = 3 } = {}) {
   await act(async () => {
     useStore.getState().resetAll();
+    useStore.setState({ history });
     useStore.getState().startEmptyWorkout();
-    useStore.getState().updateActive((w) => ({ ...w, exercises: exerciseIds.map((exerciseId, i) => ({ id: `row${i}`, exerciseId, notes, sets: emptySets(3) })) }));
+    useStore.getState().updateActive((w) => ({ ...w, exercises: exerciseIds.map((exerciseId, i) => ({ id: `row${i}`, exerciseId, notes, sets: emptySets(sets) })) }));
   });
   return await render(<Tracker />);
 }
 
+const lastWeek = (sets: [number, number][]): Workout => ({
+  id: 'last',
+  name: 'Workout',
+  notes: '',
+  startedAt: Date.now() - 7 * 86_400_000,
+  endedAt: Date.now() - 7 * 86_400_000 + 3_600_000,
+  pausedMs: 0,
+  unit: 'lb',
+  exercises: [{ id: 'e', exerciseId: BENCH, notes: '', sets: sets.map(([weight, reps], i) => ({ id: `p${i}`, type: 'normal', weight, reps, rpe: null, done: true })) }],
+});
+
 const sets = () => useStore.getState().active!.exercises[0].sets;
 const row = (s: LoggedSet) => [s.weight, s.reps, s.done];
-const field = (id: string) => screen.getByTestId(id);
+const el = (id: string) => screen.getByTestId(id);
+/** What a field shows: its value (white) or its hint (grey). */
+const shown = (id: string) => ({ value: screen.queryByTestId(`${id}-value`)?.props.children ?? '', hint: screen.queryByTestId(`${id}-hint`)?.props.children ?? '' });
 
+async function keys(text: string) {
+  for (const k of text) await fireEvent.press(el(`key-${k === '.' ? 'dot' : k}`));
+}
+async function type(id: string, text: string) {
+  await fireEvent.press(el(id));
+  await keys(text);
+}
 async function log(i: number, w: string, r: string) {
-  await fireEvent.changeText(field(`weight-0-${i}`), w);
-  await fireEvent.changeText(field(`reps-0-${i}`), r);
-  await fireEvent.press(field(`check-0-${i}`));
+  await type(`weight-0-${i}`, w);
+  await type(`reps-0-${i}`, r);
+  await fireEvent.press(el(`check-0-${i}`));
 }
 
 describe('tracker', () => {
-  it('logs sets, then folds into "3 sets · best 135lb × 8" (best by estimated 1RM)', async () => {
+  it('logs sets with the keypad, then folds into "3 sets · best 135lb × 8" (best by estimated 1RM)', async () => {
     await startWith([BENCH]);
     await log(0, '135', '8');
     await log(1, '135', '8');
@@ -48,64 +75,90 @@ describe('tracker', () => {
       [135, 8, true],
       [140, 6, true],
     ]);
-    expect(field('collapsed-summary-0')).toHaveTextContent('3 sets · best 135lb × 8');
+    expect(el('collapsed-summary-0')).toHaveTextContent('3 sets · best 135lb × 8');
   });
 
-  it('with no history, hints come from the set above and the circle accepts them', async () => {
+  it('checking a set opens nothing and moves nothing; its numbers become the next hints', async () => {
     await startWith([BENCH]);
     await log(0, '135', '8');
-    expect(field('weight-0-1').props.placeholder).toBe('135');
-    expect(field('reps-0-1').props.placeholder).toBe('8');
-    await fireEvent.press(field('check-0-1'));
+    expect(screen.queryByTestId('keypad')).toBeNull();
+    expect(shown('weight-0-1')).toEqual({ value: '', hint: '135' });
+    expect(shown('reps-0-1')).toEqual({ value: '', hint: '8' });
+    await fireEvent.press(el('check-0-1')); // one tap logs the hint
     expect(row(sets()[1])).toEqual([135, 8, true]);
+  });
+
+  it('a number you change carries down to the sets below instead of last session (Boostcamp)', async () => {
+    await startWith([BENCH], { history: [lastWeek([[360, 10], [360, 10], [450, 8]])], sets: 3 });
+    expect([shown('weight-0-0').hint, shown('weight-0-1').hint, shown('weight-0-2').hint]).toEqual(['360', '360', '450']);
+    await type('weight-0-0', '385');
+    expect([shown('weight-0-1').hint, shown('weight-0-2').hint]).toEqual(['385', '385']);
+    expect(shown('reps-0-2').hint).toBe('8'); // reps weren't changed: still last session's
+    await fireEvent.press(el('check-0-0'));
+    await fireEvent.press(el('check-0-1'));
+    await fireEvent.press(el('check-0-2'));
+    expect(sets().map(row)).toEqual([
+      [385, 10, true],
+      [385, 10, true],
+      [385, 8, true],
+    ]);
+  });
+
+  it('tapping a field fills nothing in; the first key replaces its number, delete clears it', async () => {
+    await startWith([BENCH]);
+    await type('weight-0-0', '100');
+    await fireEvent.press(el('keypad-hide'));
+    expect(sets()[0].weight).toBe(100);
+    await fireEvent.press(el('weight-0-1')); // hint 100, but nothing is filled in
+    expect(sets()[1].weight).toBeNull();
+    await fireEvent.press(el('weight-0-0'));
+    await keys('95');
+    expect(sets()[0].weight).toBe(95);
+    await fireEvent.press(el('weight-0-0'));
+    await fireEvent.press(el('key-del'));
+    expect(sets()[0].weight).toBeNull();
+  });
+
+  it('Next walks weight → reps → the next unfinished set, then Done closes', async () => {
+    await startWith([BENCH], { sets: 2 });
+    await type('weight-0-0', '60');
+    await fireEvent.press(el('keypad-next'));
+    await keys('12');
+    await fireEvent.press(el('keypad-next'));
+    await keys('65');
+    await fireEvent.press(el('keypad-next'));
+    await keys('10');
+    expect(el('keypad-next')).toHaveTextContent('Done');
+    await fireEvent.press(el('keypad-next'));
+    expect(screen.queryByTestId('keypad')).toBeNull();
+    expect(sets().map(row)).toEqual([
+      [60, 12, false],
+      [65, 10, false],
+    ]);
   });
 
   it('an empty circle with nothing to hint from does nothing', async () => {
     await startWith([BENCH]);
-    await fireEvent.press(field('check-0-0'));
+    await fireEvent.press(el('check-0-0'));
     expect(row(sets()[0])).toEqual([null, null, false]);
   });
 
-  it('focusing a set fills it from the hint, shown grey in an empty field so typing starts fresh', async () => {
+  it('reps take whole numbers only; weight takes decimals', async () => {
     await startWith([BENCH]);
-    await log(0, '135', '8');
-    await fireEvent(field('weight-0-1'), 'focus');
-    expect(row(sets()[1])).toEqual([135, 8, false]); // prefilled
-    expect(field('weight-0-1').props.value).toBe('');
-    expect(field('weight-0-1').props.placeholder).toBe('135');
-    expect(field('reps-0-1').props.value).toBe('8');
-    await fireEvent.changeText(field('weight-0-1'), '140');
-    expect(sets()[1].weight).toBe(140);
-  });
-
-  it('leaving a focused field without typing keeps its number', async () => {
-    await startWith([BENCH]);
-    await fireEvent.changeText(field('weight-0-0'), '100');
-    await fireEvent(field('weight-0-0'), 'focus');
-    expect(field('weight-0-0').props.value).toBe('');
-    await fireEvent(field('weight-0-0'), 'blur');
-    expect(field('weight-0-0').props.value).toBe('100');
-    expect(sets()[0].weight).toBe(100);
-  });
-
-  it('checking a set while its field is focused shows the number as the value, not a hint', async () => {
-    await startWith([BENCH]);
-    await log(0, '135', '8');
-    await fireEvent(field('weight-0-1'), 'focus'); // filled from set 1, shown as the hint
-    await fireEvent.press(field('check-0-1')); // no blur: the field is swapped out
-    expect(row(sets()[1])).toEqual([135, 8, true]);
-    expect(field('weight-0-1').props.value).toBe('135');
+    await type('weight-0-0', '22.5');
+    await type('reps-0-0', '8.5');
+    expect([sets()[0].weight, sets()[0].reps]).toEqual([22.5, 85]);
   });
 
   it('note popup: OK saves trimmed, Delete clears', async () => {
-    await startWith([BENCH], 'old note');
+    await startWith([BENCH], { notes: 'old note' });
     await fireEvent.press(screen.getAllByTestId('note-0')[0]);
-    expect(field('note-input').props.value).toBe('old note');
-    await fireEvent.changeText(field('note-input'), '  pause at the bottom  ');
-    await fireEvent.press(field('note-ok'));
+    expect(el('note-input').props.value).toBe('old note');
+    await fireEvent.changeText(el('note-input'), '  pause at the bottom  ');
+    await fireEvent.press(el('note-ok'));
     expect(useStore.getState().active!.exercises[0].notes).toBe('pause at the bottom');
     await fireEvent.press(screen.getAllByTestId('note-0')[0]);
-    await fireEvent.press(field('note-delete'));
+    await fireEvent.press(el('note-delete'));
     expect(useStore.getState().active!.exercises[0].notes).toBe('');
   });
 });

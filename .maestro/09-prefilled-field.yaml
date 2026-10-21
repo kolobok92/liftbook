@@ -1,6 +1,6 @@
-# Device-only smoke check: typing into a field that already holds a number (pre-filled from the
-# set above on focus, or typed earlier) replaces it. On Android the focusing tap moved the caret
-# and digits landed inside the number (135 → 113535); component tests can't see the caret.
+# Device check of the in-app keypad (component tests can't prove real taps): a field's number
+# starts out selected so the first key replaces it, Next walks weight → reps, and a set's hint is
+# the set above's numbers until you type over them.
 appId: ${APP_ID}
 ---
 # Starting state from the test-build seed link (src/lib/e2eScenarios.ts), not setup taps.
@@ -12,28 +12,47 @@ appId: ${APP_ID}
     timeout: 30000
 - tapOn:
     id: "weight-0-0"
-- inputText: "135"
 - tapOn:
-    id: "reps-0-0"
-- inputText: "8"
+    id: "key-1"
+- tapOn:
+    id: "key-3"
+- tapOn:
+    id: "key-5"
+- tapOn:
+    id: "keypad-next"
+- tapOn:
+    id: "key-8"
 - tapOn:
     id: "check-0-0"
-# Focus moved to set 2 and filled it from set 1; type over both numbers.
+# Set 2 hints set 1's numbers; type over the weight, re-open it and replace it again.
 - tapOn:
     id: "weight-0-1"
-- inputText: "140"
 - tapOn:
-    id: "reps-0-1"
-- inputText: "6"
-# Re-edit a number typed earlier in the same set.
+    id: "key-1"
+- tapOn:
+    id: "key-4"
+- tapOn:
+    id: "key-0"
 - tapOn:
     id: "weight-0-1"
-- inputText: "145"
+- tapOn:
+    id: "key-1"
+- tapOn:
+    id: "key-4"
+- tapOn:
+    id: "key-5"
 - tapOn:
     id: "check-0-1"
 - assertVisible:
     id: "weight-0-1"
-    text: "145"
+    text: "Set 2 weight: 145"
 - assertVisible:
     id: "reps-0-1"
-    text: "6"
+    text: "Set 2 reps: 8"
+- assertVisible:
+    id: "weight-0-2"
+    text: "Set 3 weight: 145 suggested"
+- takeScreenshot:
+    path: el-keypad-rows
+    cropOn:
+      id: "exercise-card-0"

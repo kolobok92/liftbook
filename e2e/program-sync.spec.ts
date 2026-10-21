@@ -1,4 +1,4 @@
-import { expect, openWith, setRow, stored, test, tid } from './helpers';
+import { expect, openWith, setRow, stored, test, tid, typeSet } from './helpers';
 
 /** Finish a Push day with a swap, an extra set and a removed exercise, then choose what to keep. */
 async function editAndFinish(page: import('@playwright/test').Page) {
@@ -15,8 +15,8 @@ async function editAndFinish(page: import('@playwright/test').Page) {
   await tid(page, 'exercise-menu-4').click();
   await tid(page, 'menu-remove').click();
   // Log one set and finish (other sets just unchecked — not a change).
-  await tid(page, 'weight-0-0').fill('20');
-  await tid(page, 'reps-0-0').fill('12');
+  await typeSet(page, 'weight-0-0', '20');
+  await typeSet(page, 'reps-0-0', '12');
   await tid(page, 'check-0-0').click();
   await tid(page, 'finish-workout').click();
   await expect(tid(page, 'program-changes')).toBeVisible();
@@ -79,8 +79,8 @@ test.describe('applying workout changes to the program', () => {
     page.on('dialog', (d) => d.accept());
     await openWith(page);
     await tid(page, 'start-next-workout').click();
-    await tid(page, 'weight-0-0').fill('20');
-    await tid(page, 'reps-0-0').fill('12');
+    await typeSet(page, 'weight-0-0', '20');
+    await typeSet(page, 'reps-0-0', '12');
     await tid(page, 'check-0-0').click();
     await tid(page, 'finish-workout').click();
     await expect(page.getByText('Workout Complete')).toBeVisible();

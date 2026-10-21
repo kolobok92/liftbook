@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { memo, useCallback, useContext, useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
+import { LayoutAnimation, Pressable, StyleSheet, View } from 'react-native';
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { SwipeDeleteAction } from './SwipeDelete';
 import { bestSet, setLabels, fmtNum, fmtSet, targetLabel } from '@/lib/calc';
@@ -12,9 +12,15 @@ import type { LoggedSet, SetType, Unit, WorkoutExercise } from '@/lib/types';
 import { C, R, SET_TYPE_COLOR, themed } from '@/lib/theme';
 import { IconLine, LastNote } from '../NoteField';
 import { MenuItem, Sheet, Txt, haptic } from '../ui';
-import { useRegisterCard } from './focusChain';
-import { NumInput } from './NumInput';
+import { CardRegistryContext } from './focusChain';
+import { useKeypad } from './keypadStore';
 import { RpeSheet } from './RpeSheet';
+import { SetField } from './SetField';
+
+type Field = 'weight' | 'reps' | 'seconds';
+
+/** Smooth the card folding/unfolding (instead of everything below jumping). */
+const animateLayout = () => LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity'));
 
 export type ExerciseCardProps = {
   exercise: WorkoutExercise;
@@ -30,8 +36,6 @@ export type ExerciseCardProps = {
   onChange: (rowId: string, fn: (e: WorkoutExercise) => WorkoutExercise) => void;
   onMenu: (index: number) => void;
   onSwap: (rowId: string) => void;
-  /** Called after the last open set here is checked, to move focus to the next exercise. */
-  onAdvance?: (rowId: string) => void;
 };
 
 function prevLabel(s: LoggedSet | undefined, unit: Unit, timed?: boolean): { top: string; sub: string } {
@@ -48,23 +52,16 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
   const oneRm = useOneRepMax(we.exerciseId);
   const rounding = settings.plateRounding[unit];
   const [rpeFor, setRpeFor] = useState<number | null>(null);
-  // The set being edited (last focused); it and its card get the orange outline.
-  const [activeRow, setActiveRow] = useState<number | null>(null);
   const [typeFor, setTypeFor] = useState<number | null>(null);
   const [showInstr, setShowInstr] = useState(false);
-  const repRefs = useRef<(ComponentRef<typeof TextInput> | null)[]>([]);
-  const weightRefs = useRef<(ComponentRef<typeof TextInput> | null)[]>([]);
+  const registry = useContext(CardRegistryContext);
+  // The set whose field is on the keypad; it and its card get the orange outline.
+  const editingSetId = useKeypad((k) => (k.target?.id.startsWith(`${we.id}:`) ? k.target.id.split(':')[1] : null));
+  const fieldRefs = useRef(new Map<string, ComponentRef<typeof View> | null>());
   const setsRef = useRef(we.sets);
-  setsRef.current = we.sets;
-
-  // Focusing a set's weight also prefills it from last time (see prefill), like tapping it.
-  const focusFirstOpen = useCallback(() => {
-    const i = setsRef.current.findIndex((s) => !s.done);
-    if (i < 0) return false;
-    weightRefs.current[i]?.focus();
-    return true;
-  }, []);
-  const registry = useRegisterCard(we.id, focusFirstOpen);
+  useEffect(() => {
+    setsRef.current = we.sets;
+  });
 
   const prev = useMemo(
     () => findPrevious(history, we.exerciseId, { programRef: p.programRef, excludeWorkoutId: p.workoutId, before: p.startedAt }),
@@ -103,18 +100,17 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
       haptic('warning');
       return;
     }
+    // Nothing moves: no focus jump or keyboard (Boostcamp). The next set's hints already show
+    // these numbers, so its circle is one tap away. Finishing the exercise folds it, smoothly.
+    useKeypad.getState().close();
+    if (p.mode === 'live' && we.sets.every((x, j) => j === i || x.done)) animateLayout();
     change((e) => ({ ...e, sets: e.sets.map((x, j) => (j === i ? committed : x)) }));
     haptic('light');
-    if (p.mode !== 'live') return;
-    // Move on to the next unfinished set here, else the next exercise.
-    const next = we.sets.findIndex((x, j) => j > i && !x.done);
-    const before = we.sets.findIndex((x, j) => j < i && !x.done);
-    const target = next >= 0 ? next : before;
-    if (target >= 0) setTimeout(() => weightRefs.current[target]?.focus(), 0);
-    else setTimeout(() => p.onAdvance?.(we.id), 0);
   };
 
   const toggleAll = () => {
+    useKeypad.getState().close();
+    if (p.mode === 'live') animateLayout();
     if (allDone) {
       change((e) => ({ ...e, sets: e.sets.map((s) => ({ ...s, done: false })) }));
       return;
@@ -131,19 +127,34 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
     haptic('light');
   };
 
-  /** Tapping into an unfinished set fills its empty inputs with the suggestion (Boostcamp-style). */
-  const prefill = (i: number) => {
-    setActiveRow(i);
-    const s = we.sets[i];
-    const sug = suggestions[i];
-    if (!s || s.done) return;
-    const patch: Partial<LoggedSet> = {};
-    if (s.weight == null && sug.weight != null) patch.weight = sug.weight;
-    if (timed) {
-      if (s.seconds == null && sug.seconds != null) patch.seconds = sug.seconds;
-    } else if (s.reps == null && sug.reps != null) patch.reps = sug.reps;
-    if (Object.keys(patch).length) updateSet(i, patch);
-  };
+  /**
+   * Put a field on the keypad. Typing replaces its number (it starts out selected); Next walks
+   * weight → reps → the following unfinished set. Nothing is filled in by just tapping.
+   */
+  const openField = useCallback(
+    (setId: string, field: Field) => {
+      const sets = setsRef.current;
+      const i = sets.findIndex((x) => x.id === setId);
+      if (i < 0) return;
+      const second: Field = timed ? 'seconds' : 'reps';
+      const later = sets.findIndex((x, j) => j > i && !x.done);
+      const following: [string, Field] | undefined = field === 'weight' ? [setId, second] : later >= 0 ? [sets[later].id, 'weight'] : undefined;
+      const value = sets[i][field];
+      const unitName = ex?.bodyweight ? `+${unit}` : unit === 'lb' ? 'lbs' : 'kg';
+      useKeypad.getState().open(
+        {
+          id: `${we.id}:${setId}:${field}`,
+          integer: field !== 'weight',
+          label: `Set ${setLabels(sets)[i]} · ${field === 'weight' ? unitName : field}`,
+          onChange: (n) => change((e) => ({ ...e, sets: e.sets.map((x) => (x.id === setId ? { ...x, [field]: n } : x)) })),
+          next: following ? () => openField(following[0], following[1]) : undefined,
+          anchor: fieldRefs.current.get(`${setId}:${field}`),
+        },
+        value == null ? '' : fmtNum(value),
+      );
+    },
+    [timed, ex?.bodyweight, unit, we.id, change],
+  );
 
   const copyPrevious = (i: number) => {
     const ps = previousSetFor(we.sets, i, prev?.sets);
@@ -167,7 +178,8 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
   const labels = setLabels(we.sets);
   const best = bestSet(we.sets.filter((x) => x.done));
   const doneCount = we.sets.filter((x) => x.done).length;
-  const activeOpen = p.mode === 'live' && activeRow != null && we.sets[activeRow] && !we.sets[activeRow].done ? activeRow : null;
+  const editingIndex = editingSetId ? we.sets.findIndex((x) => x.id === editingSetId) : -1;
+  const activeOpen = p.mode === 'live' && editingIndex >= 0 && !we.sets[editingIndex].done ? editingIndex : null;
 
   const header = (
     <View style={styles.head}>
@@ -184,7 +196,10 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
           testID={`collapse-${p.index}`}
           accessibilityLabel={collapsed ? 'Expand exercise' : 'Collapse exercise'}
           hitSlop={10}
-          onPress={() => setCollapsedOverride(!collapsed)}
+          onPress={() => {
+            animateLayout();
+            setCollapsedOverride(!collapsed);
+          }}
           style={{ padding: 4 }}
         >
           <Ionicons name={collapsed ? 'chevron-down' : 'chevron-up'} size={20} color={C.textDim} />
@@ -198,7 +213,10 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
       <Pressable
         testID={`exercise-card-${p.index}`}
         accessibilityLabel={`${name}, tap to expand`}
-        onPress={() => setCollapsedOverride(false)}
+        onPress={() => {
+          animateLayout();
+          setCollapsedOverride(false);
+        }}
         style={[styles.card, p.supersetLabel ? styles.superset : null]}
       >
         {header}
@@ -319,50 +337,42 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
                 ) : null}
               </View>
               <View style={[styles.colPill, styles.pill, active && styles.pillActive]}>
-                <NumInput
-                  inputRef={(r) => {
-                    weightRefs.current[i] = r;
-                  }}
+                <SetField
+                  fieldId={`${we.id}:${s.id}:weight`}
                   testID={`weight-${p.index}-${i}`}
                   label={`Set ${i + 1} weight`}
                   value={s.weight}
-                  placeholder={sug.weight}
-                  done={s.done}
-                  onFocus={() => prefill(i)}
-                  onChange={(n) => updateSet(i, { weight: n })}
-                  style={styles.pillInput}
+                  hint={sug.weight}
+                  onPress={() => openField(s.id, 'weight')}
+                  viewRef={(v) => {
+                    fieldRefs.current.set(`${s.id}:weight`, v);
+                  }}
                 />
                 <View style={styles.pillDivider} />
                 {timed ? (
-                  <NumInput
-                    inputRef={(r) => {
-                      repRefs.current[i] = r;
-                    }}
-                    testID={`seconds-${p.index}-${i}`}
-                    label={`Set ${i + 1} seconds`}
-                    integer
-                    value={s.seconds}
-                    placeholder={sug.seconds}
-                    done={s.done}
-                    onFocus={() => prefill(i)}
-                    onChange={(n) => updateSet(i, { seconds: n })}
-                    style={styles.pillInput}
-                  />
+                  <SetField
+                  fieldId={`${we.id}:${s.id}:seconds`}
+                  testID={`seconds-${p.index}-${i}`}
+                  label={`Set ${i + 1} seconds`}
+                  value={s.seconds}
+                  hint={sug.seconds}
+                  onPress={() => openField(s.id, 'seconds')}
+                  viewRef={(v) => {
+                    fieldRefs.current.set(`${s.id}:seconds`, v);
+                  }}
+                />
                 ) : (
-                  <NumInput
-                    inputRef={(r) => {
-                      repRefs.current[i] = r;
-                    }}
-                    testID={`reps-${p.index}-${i}`}
-                    label={`Set ${i + 1} reps`}
-                    integer
-                    value={s.reps}
-                    placeholder={sug.reps}
-                    done={s.done}
-                    onFocus={() => prefill(i)}
-                    onChange={(n) => updateSet(i, { reps: n })}
-                    style={styles.pillInput}
-                  />
+                  <SetField
+                  fieldId={`${we.id}:${s.id}:reps`}
+                  testID={`reps-${p.index}-${i}`}
+                  label={`Set ${i + 1} reps`}
+                  value={s.reps}
+                  hint={sug.reps}
+                  onPress={() => openField(s.id, 'reps')}
+                  viewRef={(v) => {
+                    fieldRefs.current.set(`${s.id}:reps`, v);
+                  }}
+                />
                 )}
               </View>
               <Pressable
@@ -452,7 +462,6 @@ const styles = themed(() => StyleSheet.create({
   colPill: { width: 104 },
   pill: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface2, borderRadius: R.sm, borderWidth: 1.5, borderColor: 'transparent', height: 38 },
   pillActive: { borderColor: C.orange },
-  pillInput: { flex: 1, backgroundColor: 'transparent', paddingVertical: 0, height: '100%' },
   pillDivider: { width: 1, alignSelf: 'stretch', marginVertical: 6, backgroundColor: C.border },
   colCheck: { width: 40, alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch' },
   typeBadge: { width: 22, height: 22, borderRadius: 5, alignItems: 'center', justifyContent: 'center' },

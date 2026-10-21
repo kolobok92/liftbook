@@ -47,6 +47,17 @@ async function snap(page: Page, name: string, ready: ReturnType<Page['getByTestI
 /** Snapshot one element (e.g. a card) so scroll position can't change what's captured. */
 async function snapEl(el: ReturnType<Page['getByTestId']>, name: string) {
   await el.scrollIntoViewIfNeeded();
+  // Opening the keypad may scroll the list (animated) to keep the field above it: wait until
+  // the element stops moving, or the shot can land mid-scroll.
+  let last = '';
+  await expect
+    .poll(async () => {
+      const now = JSON.stringify(await el.boundingBox());
+      const settled = now === last;
+      last = now;
+      return settled;
+    }, { intervals: [150] })
+    .toBe(true);
   await expect(el).toHaveScreenshot(`${name}.png`, opts);
 }
 
@@ -62,9 +73,11 @@ test.describe('visual @visual', () => {
     await open(page);
     await tid(page, 'start-next-workout').click();
     await snap(page, 'tracker-fresh', tid(page, 'set-row-0-0'));
-    await tid(page, 'weight-0-0').click();
     await tid(page, 'check-0-0').click();
-    await snapEl(tid(page, 'exercise-card-0'), 'tracker-active-set');
+    // Set 2's weight on the in-app keypad: selected (the first key replaces it), pill outlined.
+    await tid(page, 'weight-0-1').click();
+    await snapEl(tid(page, 'set-row-0-1'), 'tracker-active-set');
+    await snapEl(tid(page, 'keypad'), 'tracker-keypad');
   });
 
   test('tracker: collapsed exercise and note', async ({ page }) => {
@@ -114,9 +127,11 @@ test.describe('visual light @visual', () => {
     await open(page);
     await snap(page, 'light-home', tid(page, 'start-next-workout'));
     await tid(page, 'start-next-workout').click();
-    await tid(page, 'weight-0-0').click();
     await tid(page, 'check-0-0').click();
-    await snapEl(tid(page, 'exercise-card-0'), 'light-tracker-active-set');
+    await tid(page, 'weight-0-1').click();
+    await snapEl(tid(page, 'set-row-0-1'), 'light-tracker-active-set');
+    await snapEl(tid(page, 'keypad'), 'light-tracker-keypad');
+    await tid(page, 'keypad-hide').click();
     await snapEl(tid(page, 'exercise-card-1'), 'light-tracker-set-types');
     await tid(page, 'minimize-workout').click();
     await page.getByText('Analytics', { exact: true }).last().click();

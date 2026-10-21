@@ -1,4 +1,4 @@
-import { expect, test, acceptDialogs, openWith, pplua, setRow, stored, tid, workout } from './helpers';
+import { expect, test, acceptDialogs, openWith, pplua, setRow, stored, tid, workout, typeSet } from './helpers';
 
 const LATERAL = 'lateral-raise-cable';
 
@@ -32,8 +32,8 @@ test.describe('workout tracker', () => {
     await tid(page, 'weight-0-0').click();
     expect(await setRow(page, 0, 0)).toMatchObject({ weight: '', reps: '', weightHint: '', repsHint: '', previous: '—' });
 
-    await tid(page, 'weight-0-0').fill('30');
-    await tid(page, 'reps-0-0').fill('12');
+    await typeSet(page, 'weight-0-0', '30');
+    await typeSet(page, 'reps-0-0', '12');
     await tid(page, 'check-0-0').click();
     await expect(tid(page, 'check-0-0')).toHaveAttribute('aria-checked', 'true');
 
@@ -63,14 +63,14 @@ test.describe('workout tracker', () => {
     // Last session's note is offered.
     await expect(tid(page, 'last-note-0')).toContainText('Pause at the top');
 
-    // Tapping into a set fills both weight and reps from last time; the focused field shows its
-    // number as the grey hint in an empty field, so typing starts fresh.
+    // Tapping a field fills nothing in: the hints stay hints (Boostcamp).
     await tid(page, 'reps-0-1').click();
-    expect(await setRow(page, 0, 1)).toMatchObject({ weight: '30', reps: '', repsHint: '10' });
+    expect(await setRow(page, 0, 1)).toMatchObject({ weight: '', weightHint: '30', reps: '', repsHint: '10' });
 
-    // Override one number, then check.
-    await tid(page, 'reps-0-1').fill('11');
+    // Override one number, then check: the circle takes the other from its hint.
+    await page.keyboard.type('11');
     await tid(page, 'check-0-1').click();
+    expect(await setRow(page, 0, 1)).toMatchObject({ weight: '30', reps: '11' });
 
     // Checking an untouched set commits last session's numbers.
     await tid(page, 'check-0-0').click();
@@ -83,31 +83,29 @@ test.describe('workout tracker', () => {
     await expect(tid(page, 'set-rpe')).toContainText('RPE 9');
     await page.getByRole('button', { name: 'Close', exact: true }).last().click();
 
-    // Set 3 got focus after set 2 was checked and filled from last session's set 3 — not set 2's new numbers.
-    expect(await setRow(page, 0, 2)).toMatchObject({ weight: '25', reps: '12' });
+    // Set 3: the changed reps (11) carry down; the weight set 2 kept from last time doesn't, so
+    // set 3 still hints its own last-session weight.
+    expect(await setRow(page, 0, 2)).toMatchObject({ weight: '', weightHint: '25', reps: '', repsHint: '11' });
   });
 
-  test('checking a set moves focus to the next open set, then the next exercise', async ({ page }) => {
+  test('checking a set opens nothing and moves nothing (no keyboard, no focus jump)', async ({ page }) => {
     await openWith(page, { history: [lastPush] });
     await tid(page, 'start-next-workout').click();
+    await typeSet(page, 'weight-0-0', '32.5');
     await tid(page, 'check-0-0').click();
-    await expect(tid(page, 'weight-0-1')).toBeFocused();
-    expect(await setRow(page, 0, 1)).toMatchObject({ weight: '', weightHint: '30', reps: '10' }); // filled on focus
-
-    // Skipped a set? Focus goes back to it after the last one.
-    await tid(page, 'check-0-3').click();
-    await expect(tid(page, 'weight-0-1')).toBeFocused();
-
-    for (const i of [1, 2]) await tid(page, `check-0-${i}`).click();
-    await expect(tid(page, 'weight-1-0')).toBeFocused(); // next exercise
+    await expect(tid(page, 'keypad')).toHaveCount(0); // the pad closes with the check
+    expect(await setRow(page, 0, 1)).toMatchObject({ weight: '', weightHint: '32.5', reps: '', repsHint: '10' });
+    await tid(page, 'check-0-1').click();
+    await expect(tid(page, 'keypad')).toHaveCount(0);
+    expect(await setRow(page, 0, 1)).toMatchObject({ weight: '32.5', reps: '10' });
   });
 
   test('beating last time is recorded as a PR', async ({ page }) => {
     acceptDialogs(page);
     await openWith(page, { history: [lastPush] });
     await tid(page, 'start-next-workout').click();
-    await tid(page, 'weight-0-0').fill('35');
-    await tid(page, 'reps-0-0').fill('12');
+    await typeSet(page, 'weight-0-0', '35');
+    await typeSet(page, 'reps-0-0', '12');
     await tid(page, 'check-0-0').click();
     await tid(page, 'finish-workout').click();
     await expect(tid(page, 'summary-prs')).toContainText('Lateral Raise (Cable)');
@@ -127,9 +125,9 @@ test.describe('workout tracker', () => {
     await tid(page, 'start-next-workout').click();
     await tid(page, 'check-0-0').click();
     await expect(tid(page, 'check-0-0')).toHaveAttribute('aria-checked', 'false');
-    await expect(tid(page, 'reps-0-0')).not.toBeFocused(); // stays put, no jump
+    await expect(tid(page, 'keypad')).toHaveCount(0); // stays put, nothing opens
     // "Complete all" skips sets that have nothing to log.
-    await tid(page, 'reps-0-1').fill('10');
+    await typeSet(page, 'reps-0-1', '10');
     await tid(page, 'complete-all-0').click();
     await expect(tid(page, 'check-0-1')).toHaveAttribute('aria-checked', 'true');
     await expect(tid(page, 'check-0-0')).toHaveAttribute('aria-checked', 'false');
@@ -188,7 +186,7 @@ test.describe('workout tracker', () => {
   test('an in-progress workout survives minimizing and an app reload', async ({ page }) => {
     await openWith(page);
     await tid(page, 'start-next-workout').click();
-    await tid(page, 'weight-0-0').fill('27.5');
+    await typeSet(page, 'weight-0-0', '27.5');
     await tid(page, 'minimize-workout').click();
     await expect(tid(page, 'active-workout-bar')).toBeVisible();
     await page.reload();
@@ -200,7 +198,7 @@ test.describe('workout tracker', () => {
     acceptDialogs(page);
     await openWith(page);
     await tid(page, 'start-next-workout').click();
-    await tid(page, 'weight-0-0').fill('30');
+    await typeSet(page, 'weight-0-0', '30');
     await tid(page, 'check-0-0').click();
     await tid(page, 'discard-workout').click();
     await expect(page.getByText('UP NEXT · CYCLE 1 · DAY 1')).toBeVisible();
@@ -224,7 +222,7 @@ test.describe('workout tracker', () => {
     });
     await openWith(page);
     await tid(page, 'start-next-workout').click();
-    await tid(page, 'weight-0-0').fill('30');
+    await typeSet(page, 'weight-0-0', '30');
     await tid(page, 'minimize-workout').click();
     await tid(page, 'start-empty-workout').click();
     expect(asked).toContain('Discard the current workout');
@@ -252,7 +250,7 @@ test('after a note, the next field gets every keystroke', async ({ page }) => {
   await page.keyboard.type('100');
   await tid(page, 'reps-0-0').click();
   await page.keyboard.type('5');
-  await expect(tid(page, 'weight-0-0')).toHaveValue('100');
+  await expect(tid(page, 'weight-0-0-value')).toHaveText('100');
   await expect(tid(page, 'note-0')).toContainText('Pause on chest');
 });
 
@@ -261,15 +259,15 @@ test('after a note, the next field gets every keystroke', async ({ page }) => {
 test('first session: logging set 1 hints the rest, and the circle accepts the hint', async ({ page }) => {
   await openWith(page);
   await tid(page, 'start-next-workout').click(); // PPLUA Push, no history
-  await tid(page, 'weight-0-0').fill('12.5');
-  await tid(page, 'reps-0-0').fill('10');
+  await typeSet(page, 'weight-0-0', '12.5');
+  await typeSet(page, 'reps-0-0', '10');
   await tid(page, 'check-0-0').click();
-  await expect(tid(page, 'weight-0-2')).toHaveAttribute('placeholder', '12.5');
-  await expect(tid(page, 'reps-0-2')).toHaveAttribute('placeholder', '10');
+  await expect(tid(page, 'weight-0-2-hint')).toHaveText('12.5');
+  await expect(tid(page, 'reps-0-2-hint')).toHaveText('10');
   await tid(page, 'check-0-2').click();
   await expect(tid(page, 'check-0-2')).toHaveAttribute('aria-checked', 'true');
-  await expect(tid(page, 'weight-0-2')).toHaveValue('12.5');
-  await expect(tid(page, 'reps-0-2')).toHaveValue('10');
+  await expect(tid(page, 'weight-0-2-value')).toHaveText('12.5');
+  await expect(tid(page, 'reps-0-2-value')).toHaveText('10');
 });
 
 // Boostcamp-style note popup: OK saves, tapping the note edits it, Delete clears, outside cancels.

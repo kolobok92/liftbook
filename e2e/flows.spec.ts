@@ -1,6 +1,6 @@
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import type { Page } from '@playwright/test';
-import { edgeViolations, expect, openWith, pplua, test, tid, workout } from './helpers';
+import { edgeViolations, expect, openWith, pplua, test, tid, workout, typeSet } from './helpers';
 
 /**
  * Filmstrips: each flow screenshots every step, then tiles them into one labelled image
@@ -65,10 +65,10 @@ test.describe('flows @flows', () => {
     await tid(page, 'start-next-workout').click();
     await s.shot('Workout opens: Previous + hints');
     await tid(page, 'weight-0-0').click();
-    await s.shot('Tap set 1: fills from last time');
-    await tid(page, 'weight-0-0').fill('22.5');
+    await s.shot('Tap set 1: keypad opens, hints stay');
+    await typeSet(page, 'weight-0-0', '22.5');
     await tid(page, 'check-0-0').click();
-    await s.shot('Check set 1: focus moves to set 2');
+    await s.shot('Check set 1: set 2 hints the new weight');
     await tid(page, 'check-0-1').click();
     await tid(page, 'check-0-2').click();
     await tid(page, 'set-type-0-3').click();

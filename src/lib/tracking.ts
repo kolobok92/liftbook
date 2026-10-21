@@ -126,33 +126,40 @@ export type SuggestCtx = {
   rounding: number;
 };
 
+type HintField = 'weight' | 'reps' | 'seconds';
+
 /**
- * What to show greyed-out in a set's inputs (and fill in when tapped or checked): the
- * matching set from last session, as-is. The one exception is a "% of 1RM" set, whose
- * weight the program prescribes.
+ * What to show greyed-out in a set's fields (and log when its circle is tapped), per field, as
+ * Boostcamp does: last session's matching set, until you change a number in a set above; then
+ * the sets below hint your number instead, so one tap on each circle logs it. Numbers you merely
+ * accepted from last session don't carry down: each set keeps following its own history.
+ * Past last session's sets, the nearest set above is the hint. A "% of 1RM" set's weight is
+ * always the program's.
  */
 export function suggestFor(ctx: SuggestCtx): Suggestion {
   const { sets, index, prev, oneRepMax, rounding } = ctx;
-  // Last session's matching set; failing that (first time, or more sets than last time), the
-  // nearest set above in this session of the same type, so logging set 1 hints sets 2–4 (Boostcamp).
-  const prevSet = previousSetFor(sets, index, prev) ?? setAbove(sets, index);
   const intensity = sets[index].target?.intensity;
   const pctWeight = intensity?.kind === 'pct' && oneRepMax ? roundTo((oneRepMax * intensity.pct) / 100, rounding) : null;
   return {
-    weight: pctWeight ?? prevSet?.weight ?? null,
-    reps: prevSet?.reps ?? null,
-    seconds: prevSet?.seconds ?? null,
+    weight: pctWeight ?? fieldHint(sets, index, prev, 'weight'),
+    reps: fieldHint(sets, index, prev, 'reps'),
+    seconds: fieldHint(sets, index, prev, 'seconds'),
     rpe: null,
   };
 }
 
-function setAbove(sets: LoggedSet[], index: number): LoggedSet | undefined {
+function fieldHint(sets: LoggedSet[], index: number, prev: LoggedSet[] | undefined, f: HintField): number | null {
+  const own = previousSetFor(sets, index, prev)?.[f] ?? null;
   const type = sets[index].type;
-  for (let i = index - 1; i >= 0; i--) {
-    const s = sets[i];
-    if (s.type === type && (s.weight != null || s.reps != null || s.seconds != null)) return s;
+  for (let j = index - 1; j >= 0; j--) {
+    const v = sets[j].type === type ? sets[j][f] : null;
+    if (v == null) continue;
+    const itsHistory = previousSetFor(sets, j, prev)?.[f] ?? null;
+    // Changed from last time (or nothing to compare): your number carries down.
+    if (itsHistory == null || itsHistory !== v) return v;
+    return own ?? v; // following last session: keep doing so
   }
-  return undefined;
+  return own;
 }
 
 /** Commit a set: fill any empty inputs from the suggestion and mark done. */

@@ -1,4 +1,4 @@
-import { expect, openWith, pplua, test, tid, workout } from './helpers';
+import { expect, openWith, pplua, test, tid, workout, typeSet } from './helpers';
 
 /**
  * Checks the numbers the user actually reads, using data chosen to break naive formatting:
@@ -31,14 +31,14 @@ test.describe('displayed values', () => {
     page.on('dialog', (d) => d.accept());
     await openWith(page, { history: [before] });
     await tid(page, 'start-next-workout').click();
-    await tid(page, 'weight-0-0').fill('22.5');
-    await tid(page, 'reps-0-0').fill('12');
+    await typeSet(page, 'weight-0-0', '22.5');
+    await typeSet(page, 'reps-0-0', '12');
     await tid(page, 'check-0-0').click();
-    await tid(page, 'weight-1-0').fill('170');
-    await tid(page, 'reps-1-0').fill('8');
+    await typeSet(page, 'weight-1-0', '170');
+    await typeSet(page, 'reps-1-0', '8');
     await tid(page, 'check-1-0').click();
-    await tid(page, 'weight-1-1').fill('180');
-    await tid(page, 'reps-1-1').fill('7');
+    await typeSet(page, 'weight-1-1', '180');
+    await typeSet(page, 'reps-1-1', '7');
     await tid(page, 'check-1-1').click();
     await tid(page, 'finish-workout').click();
 

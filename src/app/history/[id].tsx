@@ -1,10 +1,11 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { useCallback, useRef, useState, type ComponentRef } from 'react';
+import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import { NoteField } from '@/components/NoteField';
 import { PRList } from '@/components/PRList';
 import { Screen } from '@/components/Screen';
 import { startWorkout } from '@/components/startWorkout';
+import { Keypad, KeypadSpacer } from '@/components/workout/Keypad';
 import { WorkoutEditor } from '@/components/workout/WorkoutEditor';
 import { Button, Card, Empty, Txt, confirm } from '@/components/ui';
 import { NumInput } from '@/components/workout/NumInput';
@@ -24,6 +25,8 @@ export default function WorkoutDetail() {
   const programName = useStore((s) => (workout?.programRef ? s.programs.find((p) => p.id === workout.programRef!.programId)?.name : undefined));
   const { byId } = useExercises();
   const [editing, setEditing] = useState(false);
+  const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
+  const scrollY = useRef(0);
   const [draft, setDraft] = useState<Workout | null>(null);
   const updateDraft = useCallback((fn: (w: Workout) => Workout) => setDraft((d) => (d ? fn(d) : d)), []);
 
@@ -66,7 +69,7 @@ export default function WorkoutDetail() {
             ),
         }}
       />
-      <Screen header>
+      <Screen header scrollRef={scrollRef} onScrollY={(y) => (scrollY.current = y)} overlay={editing ? <Keypad scrollRef={scrollRef} scrollY={scrollY} /> : null}>
         {editing && draft ? (
           <>
             <TextInput value={draft.name} onChangeText={(name) => setDraft({ ...draft, name })} style={{ color: C.text, fontSize: 24, fontWeight: '800', padding: 0 }} />
@@ -95,6 +98,7 @@ export default function WorkoutDetail() {
               />
               <Button style={{ flex: 1 }} title="Save Changes" onPress={saveEdit} />
             </View>
+            <KeypadSpacer />
           </>
         ) : (
           <>

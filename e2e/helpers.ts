@@ -76,16 +76,28 @@ export function acceptDialogs(page: Page) {
 
 export const tid = (page: Page, testId: string) => page.getByTestId(testId);
 
+/** A set field's shown value (white) or hint (grey); '' when it shows the other or nothing. */
+async function fieldPart(page: Page, testId: string, part: 'value' | 'hint') {
+  await tid(page, testId).waitFor(); // the screen has rendered the field
+  const el = tid(page, `${testId}-${part}`);
+  return (await el.count()) ? (await el.innerText()).trim() : '';
+}
+
 export async function setRow(page: Page, ex: number, i: number) {
-  const w = tid(page, `weight-${ex}-${i}`);
-  const r = tid(page, `reps-${ex}-${i}`);
   return {
-    weight: await w.inputValue(),
-    weightHint: (await w.getAttribute('placeholder')) ?? '',
-    reps: await r.inputValue(),
-    repsHint: (await r.getAttribute('placeholder')) ?? '',
+    weight: await fieldPart(page, `weight-${ex}-${i}`, 'value'),
+    weightHint: await fieldPart(page, `weight-${ex}-${i}`, 'hint'),
+    reps: await fieldPart(page, `reps-${ex}-${i}`, 'value'),
+    repsHint: await fieldPart(page, `reps-${ex}-${i}`, 'hint'),
     previous: (await tid(page, `prev-${ex}-${i}`).innerText()).replace(/\s+/g, ' ').trim(),
   };
+}
+
+/** Type a number into a set field: tap it (opens the in-app keypad), then type on the keyboard. */
+export async function typeSet(page: Page, testId: string, text: string) {
+  await tid(page, testId).click();
+  await expect(tid(page, 'keypad')).toBeVisible();
+  await page.keyboard.type(text);
 }
 
 /** Program-day slot ref for the seeded PPLUA program. */

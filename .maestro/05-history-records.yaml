@@ -18,9 +18,10 @@ appId: ${APP_ID}
     id: "edit-workout"
 - tapOn:
     id: "reps-0-0"
-- eraseText
-- inputText: "6"
-- hideKeyboard
+- tapOn:
+    id: "key-6"
+- tapOn:
+    id: "keypad-hide"
 - tapOn:
     id: "save-workout-edit"
 - assertVisible: '185lb × 6'

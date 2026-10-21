@@ -1,5 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
-import { expect, openWith, pplua, setRow, stored, test, tid, workout } from './helpers';
+import { expect, openWith, pplua, setRow, stored, test, tid, workout, typeSet } from './helpers';
 
 const lastPush = workout({
   name: 'Push',
@@ -30,7 +30,7 @@ test.describe('exercise actions', () => {
     for (const i of [0, 1, 2, 3]) await tid(page, `check-0-${i}`).click();
     await expect(tid(page, 'collapsed-summary-0')).toHaveText('4 sets · best 20lb × 12');
     await expect(tid(page, 'set-row-0-0')).toHaveCount(0);
-    await expect(tid(page, 'weight-1-0')).toBeFocused(); // moved on to the next exercise
+    await expect(tid(page, 'keypad')).toHaveCount(0); // nothing jumps to the next exercise
 
     await tid(page, 'exercise-card-0').click();
     await expect(tid(page, 'set-row-0-0')).toBeVisible();
@@ -83,8 +83,8 @@ test.describe('exercise actions', () => {
     expect(asked).toBe('');
 
     // Exercise with a logged set: confirms, then deletes.
-    await tid(page, 'weight-0-0').fill('20');
-    await tid(page, 'reps-0-0').fill('12');
+    await typeSet(page, 'weight-0-0', '20');
+    await typeSet(page, 'reps-0-0', '12');
     await tid(page, 'check-0-0').click();
     await swipeLeft(page, tid(page, 'exercise-card-0').getByText('Previous', { exact: true }), 0.6); // not on the complete-all button at the row's edge
     await tid(page, 'swipe-delete-exercise-0').click();

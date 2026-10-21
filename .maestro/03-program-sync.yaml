@@ -31,10 +31,18 @@ appId: ${APP_ID}
     direction: UP
 - tapOn:
     id: "weight-0-0"
-- inputText: "20"
+- tapOn:
+    id: "key-2"
+- tapOn:
+    id: "key-0"
 - tapOn:
     id: "reps-0-0"
-- inputText: "12"
+- tapOn:
+    id: "key-1"
+- tapOn:
+    id: "key-2"
+- tapOn:
+    id: "keypad-hide"
 - tapOn:
     id: "check-0-0"
 - tapOn:

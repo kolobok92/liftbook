@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { expect, test, acceptDialogs, openWith, pplua, setRow, stored, tid, workout } from './helpers';
+import { expect, test, acceptDialogs, openWith, pplua, setRow, stored, tid, workout, typeSet } from './helpers';
 
 const BENCH = 'bench-press-barbell';
 const older = workout({ name: 'Push A', daysAgo: 14, exercises: [{ exerciseId: BENCH, sets: [{ weight: 185, reps: 5 }, { weight: 185, reps: 5 }] }] });
@@ -12,7 +12,7 @@ test.describe('history, records and data', () => {
     await page.getByText('History', { exact: true }).last().click();
     await tid(page, `history-card-${older.id}`).click();
     await tid(page, 'edit-workout').click();
-    await tid(page, 'reps-0-1').fill('6');
+    await typeSet(page, 'reps-0-1', '6');
     await tid(page, 'save-workout-edit').click();
     await expect(page.getByText('185lb × 6').last()).toBeVisible(); // the history card behind shows it too
 

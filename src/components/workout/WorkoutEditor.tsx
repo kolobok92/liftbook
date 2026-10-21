@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { View } from 'react-native';
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { NoteModal } from './NoteModal';
@@ -39,20 +39,9 @@ export function WorkoutEditor({ workout, update, mode }: { workout: Workout; upd
   const setExercises = useCallback((fn: (exs: WorkoutExercise[]) => WorkoutExercise[]) => update((w) => ({ ...w, exercises: fn(w.exercises) })), [update]);
 
   // Stable callbacks (they take the row id) so typing in one card doesn't re-render the others.
-  const order = useRef<string[]>([]);
-  useEffect(() => {
-    order.current = workout.exercises.map((e) => e.id);
-  });
   const onCardChange = useCallback(
     (rowId: string, fn: (e: WorkoutExercise) => WorkoutExercise) => setExercises((exs) => exs.map((x) => (x.id === rowId ? fn(x) : x))),
     [setExercises],
-  );
-  const onAdvance = useCallback(
-    (rowId: string) => {
-      const ids = order.current;
-      registry.focusFirstOpen(ids.slice(ids.indexOf(rowId) + 1));
-    },
-    [registry],
   );
 
   const addExercises = () => {
@@ -119,7 +108,6 @@ export function WorkoutEditor({ workout, update, mode }: { workout: Workout; upd
               onChange={onCardChange}
               onMenu={setMenuFor}
               onSwap={swap}
-              onAdvance={onAdvance}
             />
           </Swipeable>
         ))}
