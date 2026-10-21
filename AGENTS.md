@@ -68,7 +68,7 @@ pre-commit gate; iOS once as the final gate. Never debug through CI.
 
 Measured costs here (software-GPU emulator, one emulator, flows run sequentially — the user
 doesn't want parallel emulators or the host GPU): component tests ≈ 5 s; JS-only APK swap ≈ 25 s;
-full Gradle build + install ≈ 2 min; one flow ≈ 0.5–1.5 min; full suite ≈ 9 min. So don't run
+full Gradle build + install ≈ 2 min; one flow ≈ 0.5–3 min; full suite ≈ 15 min. So don't run
 the full suite per iteration.
 
 - **Local (free):** `node scripts/maestro-android.mjs .maestro/<flow>.yaml` (no argument = all
@@ -80,6 +80,9 @@ the full suite per iteration.
     (`.cache/android-base.apk`); otherwise Gradle builds and saves a new base. `FULL_BUILD=1`
     forces Gradle. The first native build ≈ 13 min.
   - Only YAML changed? `SKIP_BUILD=1` (reuses the installed APK). Don't rebuild for flow edits.
+  - `.cache/` is scratch. Worth keeping: `android-base.apk`/`.key` (the JS-swap base) and
+    `free-exercise-db`/`fedb-images` (importer sources); everything else regenerates. The build
+    mirror `C:\lb` and CMake staging `C:\x` are needed for builds (deleting them = 13 min rebuild).
   - Flows start from a seeded state, not setup taps: `- clearState` then
     `- openLink: liftbook://e2e-seed?scenario=<name>` (scenarios in `src/lib/e2eScenarios.ts`).
     The route only works in bundles built with `EXPO_PUBLIC_E2E=1` (this runner and

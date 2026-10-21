@@ -36,19 +36,36 @@ out of the free account's 10 per week; AltStore itself counts as one of the 3 ac
 (Alternatives: Sideloadly does a one-off install without auto-refresh; SideStore refreshes on
 the phone with no PC after a fiddlier setup.)
 
+## Troubleshooting
+
+- **"AltServer could not sign in with your Apple ID" (-80045 / -80046), October 2026:** Apple
+  changed its sign-in and every free sideloading tool (AltStore, SideStore, Sideloadly,
+  iLoader) broke at once; it's not the .ipa or your PC. Wait for an AltServer update
+  ([altstoreio/AltStore#1840](https://github.com/altstoreio/AltStore/issues/1840)). Don't
+  delete AltStore or Liftbook meanwhile: the installed app keeps working until its 7-day
+  signing runs out.
+- **Moving from an install with a different app id** (before `io.liftbook.app`): the new one
+  installs next to it. Old app → Profile → **Backup**, new app → Profile → **Restore**, then
+  delete the old one.
+
 ## What to try
 
-- **Core loop:** start the Push day, log a few sets (tap a row to prefill, check it, focus
-  moves on), finish, then Repeat it from Home: Previous should show what you just did.
-- **Live Activity:** start a workout and lock the phone. The lock screen should show the
-  current exercise (with its photo), "Set N of M · Push" and a clock counting up; on an iPhone
-  with a Dynamic Island, swipe home to see the clock in the island (long-press it to expand).
-  Check a set → the card moves to the next set. Pause in the app → the card shows "Paused"
-  with a progress bar. Finish → the card ends. Tapping the card opens the workout.
-  If nothing appears: Settings → Liftbook → **Live Activities** must be on.
+- **Logging (Boostcamp-style):** start the Push day. Fields start blank; the Previous column
+  shows last time. Tap a set's circle to log last time's numbers in one tap, or tap a field to
+  type on the in-app keypad (Next walks weight → reps → next set; RPE tab for RPE). Each set
+  below hints the set above's numbers in grey, so the next circle is one tap. Checking a set
+  doesn't move or open anything; a finished exercise folds to "✓ name".
+- **Current set:** the orange pill + circle marks the set you're on; it follows you if you do
+  exercises out of order.
+- **Supersets:** ••• → Superset with… → pick any exercise. It becomes one card with a tab per
+  exercise that flips to the set you're due (A1 → B1 → A2).
+- **Notes:** an exercise's note (e.g. machine settings) carries into the next session by itself.
+- **Live Activity:** start a workout and lock the phone. The lock screen shows the exercise
+  you're on (with its photo), "Set 1 of 4 (5–8 reps)" and a clock counting up; with a Dynamic
+  Island, swipe home to see the clock in the island. Pause in the app → "Paused" with a progress
+  bar. Finish → the card ends. Tapping it opens the workout. If nothing appears: Settings →
+  Liftbook → **Live Activities** must be on.
 - **Light mode:** Profile → Appearance → System / Light / Dark; "System" follows the phone.
-- **Keyboard:** while typing a weight, the number pad shouldn't cover the set you're editing,
-  and in the exercise picker the Add button should be reachable.
 
 Please send a screenshot of anything that looks off.
 
