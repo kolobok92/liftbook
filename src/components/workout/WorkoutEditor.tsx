@@ -35,6 +35,8 @@ export function WorkoutEditor({ workout, update, mode }: { workout: Workout; upd
   const { byId } = useExercises();
   const noteEx = noteFor ? workout.exercises.find((e) => e.id === noteFor) : undefined;
   const labels = supersetLabels(workout.exercises);
+  // The exercise holding the workout's next unchecked set (marked "up next" in its card).
+  const upNextRow = mode === 'live' ? workout.exercises.find((e) => e.sets.some((s) => !s.done))?.id : undefined;
 
   const setExercises = useCallback((fn: (exs: WorkoutExercise[]) => WorkoutExercise[]) => update((w) => ({ ...w, exercises: fn(w.exercises) })), [update]);
 
@@ -108,6 +110,7 @@ export function WorkoutEditor({ workout, update, mode }: { workout: Workout; upd
               onChange={onCardChange}
               onMenu={setMenuFor}
               onSwap={swap}
+              upNext={e.id === upNextRow}
             />
           </Swipeable>
         ))}

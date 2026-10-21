@@ -3,6 +3,7 @@ import { useEffect, type ComponentRef, type RefObject } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, R, themed } from '@/lib/theme';
+import { RPE_LABELS, fmtNum } from '@/lib/calc';
 import { Txt } from '../ui';
 import { useKeypad, type KeypadKey } from './keypadStore';
 
@@ -22,6 +23,9 @@ const ROWS: KeypadKey[][] = [
   ['7', '8', '9'],
   ['.', '0', 'del'],
 ];
+
+const RPES = [6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10];
+const KIND_LABEL = { weight: 'Weight', reps: 'Reps', seconds: 'Time' } as const;
 
 const WEB_KEYS: Record<string, KeypadKey> = { '.': '.', ',': '.', Backspace: 'del', Delete: 'clear' };
 
@@ -70,43 +74,90 @@ export function Keypad({ scrollRef, scrollY }: { scrollRef?: RefObject<Component
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  const tab = useKeypad((s) => s.tab);
   if (!target) return null;
-  const { press, next, close } = useKeypad.getState();
+  const { press, next, close, setTab, pickRpe } = useKeypad.getState();
+  const rpeTab = tab === 'rpe' && !!target.rpe;
+  const tabBtn = (id: 'number' | 'rpe', label: string) => (
+    <Pressable testID={`keypad-tab-${id}`} accessibilityRole="tab" aria-selected={tab === id} onPress={() => setTab(id)} hitSlop={6} style={styles.tab}>
+      <Txt weight={tab === id ? '800' : '600'} color={tab === id ? C.text : C.textFaint}>
+        {label}
+      </Txt>
+    </Pressable>
+  );
   return (
     <View testID="keypad" style={[styles.panel, { height, paddingBottom: PAD + insets.bottom }]}>
       <View style={styles.toolbar}>
         <Pressable testID="keypad-hide" accessibilityLabel="Hide keypad" hitSlop={8} onPress={close} style={styles.tool}>
           <Ionicons name="chevron-down" size={22} color={C.textDim} />
         </Pressable>
-        <Txt dim size={13} style={{ flex: 1 }} numberOfLines={1}>
-          {target.label}
-        </Txt>
-        <Pressable testID="keypad-clear" accessibilityRole="button" onPress={() => press('clear')} style={styles.tool}>
-          <Txt weight="600">Clear</Txt>
-        </Pressable>
+        <View style={styles.tabs}>
+          {tabBtn('number', KIND_LABEL[target.kind])}
+          {target.rpe ? tabBtn('rpe', 'RPE') : null}
+        </View>
+        {rpeTab ? (
+          <Pressable testID="keypad-clear" accessibilityRole="button" onPress={() => pickRpe(null)} style={styles.tool}>
+            <Txt weight="600">Clear</Txt>
+          </Pressable>
+        ) : null}
         <Pressable testID="keypad-next" accessibilityRole="button" onPress={next} style={[styles.tool, styles.nextBtn]}>
-          <Txt weight="800" color={C.onAccent}>
+          <Txt weight="800" color={C.bg}>
             {target.next ? 'Next' : 'Done'}
           </Txt>
         </Pressable>
       </View>
-      {ROWS.map((row) => (
-        <View key={row.join('')} style={styles.row}>
-          {row.map((k) => (
-            <Pressable
-              key={k}
-              testID={`key-${k === '.' ? 'dot' : k}`}
-              accessibilityRole="button"
-              accessibilityLabel={k === 'del' ? 'Delete' : k === '.' ? 'Decimal point' : k}
-              disabled={k === '.' && target.integer}
-              onPress={() => press(k)}
-              style={({ pressed }) => [styles.key, pressed && styles.keyPressed, k === '.' && target.integer && { opacity: 0.3 }]}
-            >
-              {k === 'del' ? <Ionicons name="backspace-outline" size={24} color={C.text} /> : <Txt size={24} weight="600">{k}</Txt>}
-            </Pressable>
+      {rpeTab ? (
+        [0, 1, 2].map((r) => (
+          <View key={r} style={styles.row}>
+            {RPES.slice(r * 3, r * 3 + 3).map((v) => {
+              const on = target.rpe?.value === v;
+              return (
+                <Pressable
+                  key={v}
+                  testID={`keypad-rpe-${v}`}
+                  accessibilityRole="button"
+                  accessibilityLabel={`RPE ${v}`}
+                  onPress={() => pickRpe(v)}
+                  style={[styles.key, styles.rpeKey, on && { backgroundColor: C.accent }]}
+                >
+                  <Txt size={20} weight="700" color={on ? C.onAccent : C.text}>
+                    {fmtNum(v)}
+                  </Txt>
+                  <Txt size={11} color={on ? C.onAccent : C.textDim}>
+                    {RPE_LABELS[String(v)]}
+                  </Txt>
+                </Pressable>
+              );
+            })}
+          </View>
+        ))
+      ) : (
+        <>
+          {ROWS.map((row) => (
+            <View key={row.join('')} style={styles.row}>
+              {row.map((k) => (
+                <Pressable
+                  key={k}
+                  testID={`key-${k === '.' ? 'dot' : k}`}
+                  accessibilityRole="button"
+                  accessibilityLabel={k === 'del' ? 'Delete' : k === '.' ? 'Decimal point' : k}
+                  disabled={k === '.' && target.integer}
+                  onPress={() => press(k)}
+                  style={({ pressed }) => [styles.key, pressed && styles.keyPressed, k === '.' && target.integer && { opacity: 0.3 }]}
+                >
+                  {k === 'del' ? (
+                    <Ionicons name="backspace-outline" size={24} color={C.text} />
+                  ) : (
+                    <Txt size={24} weight="600">
+                      {k}
+                    </Txt>
+                  )}
+                </Pressable>
+              ))}
+            </View>
           ))}
-        </View>
-      ))}
+        </>
+      )}
     </View>
   );
 }
@@ -127,7 +178,10 @@ const styles = themed(() =>
     },
     toolbar: { height: TOOLBAR - GAP, flexDirection: 'row', alignItems: 'center', gap: 8 },
     tool: { height: 34, paddingHorizontal: 12, borderRadius: R.sm, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface2 },
-    nextBtn: { backgroundColor: C.accent, minWidth: 72 },
+    nextBtn: { backgroundColor: C.text, minWidth: 72 },
+    tabs: { flex: 1, flexDirection: 'row', justifyContent: 'center', gap: 18 },
+    tab: { paddingVertical: 6 },
+    rpeKey: { height: (4 * KEY + GAP) / 3, gap: 2 },
     row: { flexDirection: 'row', gap: GAP },
     key: { flex: 1, height: KEY, borderRadius: R.md, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
     keyPressed: { backgroundColor: C.surface3 },

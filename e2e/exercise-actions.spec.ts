@@ -24,21 +24,22 @@ async function swipeLeft(page: Page, target: Locator, startFrac = 1) {
 }
 
 test.describe('exercise actions', () => {
-  test('a finished exercise collapses to a summary; tapping reopens it', async ({ page }) => {
+  test('a finished exercise folds to “✓ name”; tapping reopens it', async ({ page }) => {
     await openWith(page, { history: [lastPush] });
     await tid(page, 'start-next-workout').click();
     for (const i of [0, 1, 2, 3]) await tid(page, `check-0-${i}`).click();
-    await expect(tid(page, 'collapsed-summary-0')).toHaveText('4 sets · best 20lb × 12');
+    await expect(tid(page, 'done-mark-0')).toBeVisible();
     await expect(tid(page, 'set-row-0-0')).toHaveCount(0);
     await expect(tid(page, 'keypad')).toHaveCount(0); // nothing jumps to the next exercise
 
-    await tid(page, 'exercise-card-0').click();
+    await tid(page, 'collapse-0').click(); // the chevron reopens it (the name opens the exercise)
     await expect(tid(page, 'set-row-0-0')).toBeVisible();
     // Unchecking a set keeps it open; finishing again folds it back up.
     await tid(page, 'check-0-3').click();
     await expect(tid(page, 'set-row-0-3')).toBeVisible();
     await tid(page, 'check-0-3').click();
-    await expect(tid(page, 'collapsed-summary-0')).toBeVisible();
+    await expect(tid(page, 'set-row-0-3')).toHaveCount(0);
+    await expect(tid(page, 'done-mark-0')).toBeVisible();
   });
 
   test('reorder exercises from the Reorder sheet', async ({ page }) => {

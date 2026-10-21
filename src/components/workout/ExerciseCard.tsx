@@ -4,10 +4,10 @@ import { memo, useCallback, useContext, useEffect, useMemo, useRef, useState, ty
 import { LayoutAnimation, Pressable, StyleSheet, View } from 'react-native';
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { SwipeDeleteAction } from './SwipeDelete';
-import { bestSet, setLabels, fmtNum, fmtSet, targetLabel } from '@/lib/calc';
+import { setLabels, fmtNum, fmtSet, targetLabel } from '@/lib/calc';
 import { exerciseName, useExercises, useOneRepMax } from '@/lib/hooks';
 import { useStore } from '@/lib/store';
-import { completeSet, emptySet, findPrevious, previousSetFor, suggestFor, type Suggestion } from '@/lib/tracking';
+import { completeSet, emptySet, findPrevious, hintFor, previousSetFor, suggestFor, type Suggestion } from '@/lib/tracking';
 import type { LoggedSet, SetType, Unit, WorkoutExercise } from '@/lib/types';
 import { C, R, SET_TYPE_COLOR, themed } from '@/lib/theme';
 import { IconLine, LastNote } from '../NoteField';
@@ -36,6 +36,8 @@ export type ExerciseCardProps = {
   onChange: (rowId: string, fn: (e: WorkoutExercise) => WorkoutExercise) => void;
   onMenu: (index: number) => void;
   onSwap: (rowId: string) => void;
+  /** This card holds the workout's next unchecked set: mark it (Boostcamp: "your current set stays highlighted"). */
+  upNext?: boolean;
 };
 
 function prevLabel(s: LoggedSet | undefined, unit: Unit, timed?: boolean): { top: string; sub: string } {
@@ -67,8 +69,9 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
     () => findPrevious(history, we.exerciseId, { programRef: p.programRef, excludeWorkoutId: p.workoutId, before: p.startedAt }),
     [history, we.exerciseId, p.programRef, p.workoutId, p.startedAt],
   );
-  const suggestions: Suggestion[] = useMemo(
-    () => we.sets.map((_, i) => suggestFor({ sets: we.sets, index: i, prev: prev?.sets, oneRepMax: oneRm, rounding })),
+  // Grey hints: the set above's numbers (Boostcamp); the circle may also fall back to last time.
+  const hints: Suggestion[] = useMemo(
+    () => we.sets.map((_, i) => hintFor({ sets: we.sets, index: i, prev: prev?.sets, oneRepMax: oneRm, rounding })),
     [we.sets, prev, oneRm, rounding],
   );
 
@@ -94,7 +97,7 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
       updateSet(i, { done: false });
       return;
     }
-    const committed = completeSet(s, suggestions[i]);
+    const committed = completeSet(s, suggestFor({ sets: we.sets, index: i, prev: prev?.sets, oneRepMax: oneRm, rounding }));
     // Nothing entered and nothing to hint from: don't log an empty set, and stay put.
     if (timed ? committed.seconds == null : committed.reps == null) {
       haptic('warning');
@@ -145,6 +148,11 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
         {
           id: `${we.id}:${setId}:${field}`,
           integer: field !== 'weight',
+          kind: field,
+          rpe: {
+            value: sets[i].rpe,
+            onPick: (v) => change((e) => ({ ...e, sets: e.sets.map((x) => (x.id === setId ? { ...x, rpe: v } : x)) })),
+          },
           label: `Set ${setLabels(sets)[i]} · ${field === 'weight' ? unitName : field}`,
           onChange: (n) => change((e) => ({ ...e, sets: e.sets.map((x) => (x.id === setId ? { ...x, [field]: n } : x)) })),
           next: following ? () => openField(following[0], following[1]) : undefined,
@@ -159,6 +167,8 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
   const copyPrevious = (i: number) => {
     const ps = previousSetFor(we.sets, i, prev?.sets);
     if (!ps) return;
+    // Close the pad: an open field would keep showing what was typed, not the copied numbers.
+    useKeypad.getState().close();
     updateSet(i, { weight: ps.weight, reps: ps.reps, seconds: ps.seconds ?? null, rpe: ps.rpe });
   };
 
@@ -176,17 +186,20 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
 
   const name = exerciseName(byId, we.exerciseId);
   const labels = setLabels(we.sets);
-  const best = bestSet(we.sets.filter((x) => x.done));
-  const doneCount = we.sets.filter((x) => x.done).length;
   const editingIndex = editingSetId ? we.sets.findIndex((x) => x.id === editingSetId) : -1;
   const activeOpen = p.mode === 'live' && editingIndex >= 0 && !we.sets[editingIndex].done ? editingIndex : null;
+  const upNextIndex = p.upNext ? we.sets.findIndex((x) => !x.done) : -1;
 
   const header = (
     <View style={styles.head}>
       <Pressable style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }} onPress={() => router.push(`/exercise/${we.exerciseId}`)}>
-        <Txt size={17} weight="600">
-          {p.index + 1}
-        </Txt>
+        {p.mode === 'live' && allDone ? (
+          <Ionicons testID={`done-mark-${p.index}`} name="checkmark" size={18} color={C.textDim} />
+        ) : (
+          <Txt size={17} weight="600">
+            {p.index + 1}
+          </Txt>
+        )}
         <Txt size={17} weight="700" numberOfLines={1} style={{ flexShrink: 1 }}>
           {name}
         </Txt>
@@ -220,23 +233,12 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
         style={[styles.card, p.supersetLabel ? styles.superset : null]}
       >
         {header}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 6 }}>
-          {allDone && (
-            <View style={styles.doneDot}>
-              <Ionicons name="checkmark" size={12} color={C.onAccent} />
-            </View>
-          )}
-          <Txt dim size={13} testID={`collapsed-summary-${p.index}`}>
-            {allDone ? `${we.sets.length} sets` : `${doneCount}/${we.sets.length} sets`}
-            {best ? ` · best ${fmtSet(best, unit, timed)}` : ''}
-          </Txt>
-        </View>
       </Pressable>
     );
   }
 
   return (
-    <View style={[styles.card, activeOpen != null && styles.cardActive, p.supersetLabel ? styles.superset : null]} testID={`exercise-card-${p.index}`}>
+    <View style={[styles.card, (activeOpen != null || p.upNext) && styles.cardActive, p.supersetLabel ? styles.superset : null]} testID={`exercise-card-${p.index}`}>
       {p.supersetLabel && (
         <Txt size={11} weight="800" color={C.accentText} style={{ letterSpacing: 0.6, paddingHorizontal: 6 }}>
           {p.supersetLabel}
@@ -285,7 +287,7 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
       {we.sets.map((s, i) => {
         const ps = previousSetFor(we.sets, i, prev?.sets);
         const pl = prevLabel(ps, unit, timed);
-        const sug = suggestions[i];
+        const sug = hints[i];
         const { top: targetTop, sub: targetSub } = targetLabel(s.target, unit, oneRm, rounding);
         const active = activeOpen === i;
         return (
@@ -336,7 +338,7 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
                   </Txt>
                 ) : null}
               </View>
-              <View style={[styles.colPill, styles.pill, active && styles.pillActive]}>
+              <View style={[styles.colPill, styles.pill, (active || upNextIndex === i) && styles.pillActive]}>
                 <SetField
                   fieldId={`${we.id}:${s.id}:weight`}
                   testID={`weight-${p.index}-${i}`}
@@ -383,7 +385,7 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
                 onPress={() => toggleDone(i)}
                 style={styles.colCheck}
               >
-                <View style={[styles.check, active && styles.checkActive, s.done && styles.checkOn]}>
+                <View testID={upNextIndex === i ? `up-next-${p.index}` : undefined} style={[styles.check, (active || upNextIndex === i) && styles.checkActive, s.done && styles.checkOn]}>
                   {s.done && <Ionicons name="checkmark" size={18} color={C.onAccent} />}
                 </View>
               </Pressable>
@@ -450,7 +452,6 @@ const styles = themed(() => StyleSheet.create({
   card: { backgroundColor: C.surface, borderRadius: R.lg, paddingVertical: 14, paddingHorizontal: 12, gap: 8, borderWidth: 1.5, borderColor: 'transparent' },
   cardActive: { borderColor: C.orange },
   superset: { borderLeftWidth: 3, borderLeftColor: C.accent },
-  doneDot: { width: 18, height: 18, borderRadius: 9, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' },
   head: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 6, paddingVertical: 4 },
   headerRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, gap: 4 },
   hdr: { fontSize: 13, color: C.textDim, textAlign: 'center' },

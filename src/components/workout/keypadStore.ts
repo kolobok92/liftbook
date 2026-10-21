@@ -13,6 +13,10 @@ export type KeypadTarget = {
   id: string;
   integer: boolean;
   label: string;
+  /** Names the pad's first tab (Weight / Reps / Time). */
+  kind: 'weight' | 'reps' | 'seconds';
+  /** The set's RPE, editable on the pad's RPE tab. */
+  rpe?: { value: number | null; onPick: (v: number | null) => void };
   onChange: (n: number | null) => void;
   /** Move to the following field; absent on the last one (the pad then shows Done). */
   next?: () => void;
@@ -45,6 +49,9 @@ type KeypadState = {
   target: KeypadTarget | null;
   text: string;
   fresh: boolean;
+  tab: 'number' | 'rpe';
+  setTab: (tab: 'number' | 'rpe') => void;
+  pickRpe: (v: number | null) => void;
   open: (target: KeypadTarget, text: string) => void;
   press: (key: KeypadKey) => void;
   next: () => void;
@@ -55,7 +62,15 @@ export const useKeypad = create<KeypadState>((set, get) => ({
   target: null,
   text: '',
   fresh: true,
-  open: (target, text) => set({ target, text, fresh: true }),
+  tab: 'number',
+  setTab: (tab) => set({ tab }),
+  pickRpe: (v) => {
+    const { target } = get();
+    if (!target?.rpe) return;
+    target.rpe.onPick(v);
+    set({ target: { ...target, rpe: { ...target.rpe, value: v } } });
+  },
+  open: (target, text) => set({ target, text, fresh: true, tab: 'number' }),
   press: (key) => {
     const { target, text, fresh } = get();
     if (!target) return;

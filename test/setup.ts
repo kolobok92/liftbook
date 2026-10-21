@@ -26,7 +26,7 @@ jest.mock('react-native-reanimated', () => {
 });
 jest.mock('@expo/vector-icons', () => {
   const { Text } = require('react-native');
-  const Icon = ({ name }: { name: string }) => require('react').createElement(Text, null, `[${name}]`);
+  const Icon = ({ name, testID }: { name: string; testID?: string }) => require('react').createElement(Text, { testID }, `[${name}]`);
   return { Ionicons: Icon, MaterialCommunityIcons: Icon };
 });
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));

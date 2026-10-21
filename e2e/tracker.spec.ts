@@ -55,26 +55,26 @@ test.describe('workout tracker', () => {
     await openWith(page, { history: [lastPush] });
     await tid(page, 'start-next-workout').click();
 
-    // Previous column and grey hints mirror last session set-by-set.
-    expect(await setRow(page, 0, 0)).toMatchObject({ previous: '30lb × 12', weightHint: '30', repsHint: '12', weight: '', reps: '' });
-    expect(await setRow(page, 0, 2)).toMatchObject({ previous: '25lb × 12', weightHint: '25', repsHint: '12' });
+    // Previous column shows last session set-by-set; the fields start blank (no grey hints from
+    // history, as in Boostcamp).
+    expect(await setRow(page, 0, 0)).toMatchObject({ previous: '30lb × 12', weightHint: '', repsHint: '', weight: '', reps: '' });
+    expect(await setRow(page, 0, 2)).toMatchObject({ previous: '25lb × 12', weightHint: '', repsHint: '' });
     expect((await setRow(page, 0, 3)).previous).toBe('25lb × 11 RPE 9');
 
     // Last session's note is offered.
     await expect(tid(page, 'last-note-0')).toContainText('Pause at the top');
 
-    // Tapping a field fills nothing in: the hints stay hints (Boostcamp).
-    await tid(page, 'reps-0-1').click();
-    expect(await setRow(page, 0, 1)).toMatchObject({ weight: '', weightHint: '30', reps: '', repsHint: '10' });
+    // One tap on set 1's empty circle logs last session's set 1.
+    await tid(page, 'check-0-0').click();
+    expect(await setRow(page, 0, 0)).toMatchObject({ weight: '30', reps: '12' });
 
-    // Override one number, then check: the circle takes the other from its hint.
+    // Set 2 now hints set 1's numbers (not its own 30 × 10 from last time). Tapping a field fills
+    // nothing in; type one number and the circle takes the other from the hint.
+    await tid(page, 'reps-0-1').click();
+    expect(await setRow(page, 0, 1)).toMatchObject({ weight: '', weightHint: '30', reps: '' });
     await page.keyboard.type('11');
     await tid(page, 'check-0-1').click();
     expect(await setRow(page, 0, 1)).toMatchObject({ weight: '30', reps: '11' });
-
-    // Checking an untouched set commits last session's numbers.
-    await tid(page, 'check-0-0').click();
-    expect(await setRow(page, 0, 0)).toMatchObject({ weight: '30', reps: '12' });
 
     // Tapping Previous copies it in (including RPE).
     await tid(page, 'prev-0-3').click();
@@ -83,9 +83,8 @@ test.describe('workout tracker', () => {
     await expect(tid(page, 'set-rpe')).toContainText('RPE 9');
     await page.getByRole('button', { name: 'Close', exact: true }).last().click();
 
-    // Set 3: the changed reps (11) carry down; the weight set 2 kept from last time doesn't, so
-    // set 3 still hints its own last-session weight.
-    expect(await setRow(page, 0, 2)).toMatchObject({ weight: '', weightHint: '25', reps: '', repsHint: '11' });
+    // Set 3 hints whatever set 2 holds (30 × 11), not its own 25 × 12 from last time.
+    expect(await setRow(page, 0, 2)).toMatchObject({ weight: '', weightHint: '30', reps: '', repsHint: '11' });
   });
 
   test('checking a set opens nothing and moves nothing (no keyboard, no focus jump)', async ({ page }) => {
@@ -94,10 +93,10 @@ test.describe('workout tracker', () => {
     await typeSet(page, 'weight-0-0', '32.5');
     await tid(page, 'check-0-0').click();
     await expect(tid(page, 'keypad')).toHaveCount(0); // the pad closes with the check
-    expect(await setRow(page, 0, 1)).toMatchObject({ weight: '', weightHint: '32.5', reps: '', repsHint: '10' });
+    expect(await setRow(page, 0, 1)).toMatchObject({ weight: '', weightHint: '32.5', reps: '', repsHint: '12' });
     await tid(page, 'check-0-1').click();
     await expect(tid(page, 'keypad')).toHaveCount(0);
-    expect(await setRow(page, 0, 1)).toMatchObject({ weight: '32.5', reps: '10' });
+    expect(await setRow(page, 0, 1)).toMatchObject({ weight: '32.5', reps: '12' });
   });
 
   test('beating last time is recorded as a PR', async ({ page }) => {

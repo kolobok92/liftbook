@@ -48,7 +48,7 @@ export function SetField({
         <Txt testID={`${testID}-value`} size={16} weight="600" style={active && fresh ? styles.selected : undefined}>
           {shown}
         </Txt>
-      ) : (
+      ) : active ? null : (
         <Txt testID={`${testID}-hint`} size={16} weight="600" color={C.textFaint}>
           {hintText}
         </Txt>

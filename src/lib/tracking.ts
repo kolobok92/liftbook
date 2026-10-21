@@ -129,37 +129,35 @@ export type SuggestCtx = {
 type HintField = 'weight' | 'reps' | 'seconds';
 
 /**
- * What to show greyed-out in a set's fields (and log when its circle is tapped), per field, as
- * Boostcamp does: last session's matching set, until you change a number in a set above; then
- * the sets below hint your number instead, so one tap on each circle logs it. Numbers you merely
- * accepted from last session don't carry down: each set keeps following its own history.
- * Past last session's sets, the nearest set above is the hint. A "% of 1RM" set's weight is
- * always the program's.
+ * The grey hint in a set's fields, as Boostcamp shows it: the numbers in the nearest set above
+ * (same type) this session, whether typed or taken from last session. Nothing comes from history
+ * here: until a set above has numbers, the fields are blank (the Previous column shows last
+ * time). A "% of 1RM" set's weight is the program's.
  */
-export function suggestFor(ctx: SuggestCtx): Suggestion {
-  const { sets, index, prev, oneRepMax, rounding } = ctx;
+export function hintFor(ctx: SuggestCtx): Suggestion {
+  const { sets, index, oneRepMax, rounding } = ctx;
   const intensity = sets[index].target?.intensity;
   const pctWeight = intensity?.kind === 'pct' && oneRepMax ? roundTo((oneRepMax * intensity.pct) / 100, rounding) : null;
-  return {
-    weight: pctWeight ?? fieldHint(sets, index, prev, 'weight'),
-    reps: fieldHint(sets, index, prev, 'reps'),
-    seconds: fieldHint(sets, index, prev, 'seconds'),
-    rpe: null,
-  };
+  return { weight: pctWeight ?? fromAbove(sets, index, 'weight'), reps: fromAbove(sets, index, 'reps'), seconds: fromAbove(sets, index, 'seconds'), rpe: null };
 }
 
-function fieldHint(sets: LoggedSet[], index: number, prev: LoggedSet[] | undefined, f: HintField): number | null {
-  const own = previousSetFor(sets, index, prev)?.[f] ?? null;
+/**
+ * What one tap on a set's circle logs into its empty fields: the hint, or with no hint yet (e.g.
+ * set 1), last session's matching set (Boostcamp: the first tap logs last time's numbers).
+ */
+export function suggestFor(ctx: SuggestCtx): Suggestion {
+  const hint = hintFor(ctx);
+  const last = previousSetFor(ctx.sets, ctx.index, ctx.prev);
+  return { weight: hint.weight ?? last?.weight ?? null, reps: hint.reps ?? last?.reps ?? null, seconds: hint.seconds ?? last?.seconds ?? null, rpe: null };
+}
+
+function fromAbove(sets: LoggedSet[], index: number, f: HintField): number | null {
   const type = sets[index].type;
   for (let j = index - 1; j >= 0; j--) {
     const v = sets[j].type === type ? sets[j][f] : null;
-    if (v == null) continue;
-    const itsHistory = previousSetFor(sets, j, prev)?.[f] ?? null;
-    // Changed from last time (or nothing to compare): your number carries down.
-    if (itsHistory == null || itsHistory !== v) return v;
-    return own ?? v; // following last session: keep doing so
+    if (v != null) return v;
   }
-  return own;
+  return null;
 }
 
 /** Commit a set: fill any empty inputs from the suggestion and mark done. */
@@ -231,8 +229,17 @@ export function autofillWorkout(w: Workout, history: Workout[], oneRepMaxFor: (i
       const prev = findPrevious(history, e.exerciseId, { programRef: w.programRef, excludeWorkoutId: w.id })?.sets;
       const sets = [...e.sets];
       for (let i = 0; i < sets.length; i++) {
-        const s = suggestFor({ sets, index: i, prev, oneRepMax: oneRepMaxFor(e.exerciseId), rounding });
-        sets[i] = { ...sets[i], weight: sets[i].weight ?? s.weight, reps: sets[i].reps ?? s.reps, seconds: sets[i].seconds ?? s.seconds };
+        // Each set from its own match last time (past that, the set above), not carried down;
+        // a "% of 1RM" set's weight is the program's.
+        const own = previousSetFor(sets, i, prev);
+        const hint = hintFor({ sets, index: i, prev, oneRepMax: oneRepMaxFor(e.exerciseId), rounding });
+        const pctWeight = sets[i].target?.intensity.kind === 'pct' ? hint.weight : null;
+        sets[i] = {
+          ...sets[i],
+          weight: sets[i].weight ?? pctWeight ?? own?.weight ?? hint.weight,
+          reps: sets[i].reps ?? own?.reps ?? hint.reps,
+          seconds: sets[i].seconds ?? own?.seconds ?? hint.seconds,
+        };
       }
       return { ...e, sets };
     }),

@@ -51,8 +51,9 @@ appId: ${APP_ID}
     id: "key-6"
 - tapOn:
     id: "check-0-2"
-# All sets done: the card folds into a summary; best set is by estimated 1RM (135×8 > 140×6).
-- assertVisible: '3 sets · best 135lb × 8'
+# All sets done: the card folds to "✓ Bench Press (Barbell)" (Boostcamp).
+- assertVisible:
+    id: "done-mark-0"
 - takeScreenshot: 03-sets-logged
 
 - tapOn:

@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { Keypad } from './Keypad';
 import { WorkoutEditor } from './WorkoutEditor';
 import { useStore } from '@/lib/store';
@@ -65,7 +65,7 @@ async function log(i: number, w: string, r: string) {
 }
 
 describe('tracker', () => {
-  it('logs sets with the keypad, then folds into "3 sets · best 135lb × 8" (best by estimated 1RM)', async () => {
+  it('logs sets with the keypad; a finished exercise folds to "✓ name" (Boostcamp)', async () => {
     await startWith([BENCH]);
     await log(0, '135', '8');
     await log(1, '135', '8');
@@ -75,7 +75,8 @@ describe('tracker', () => {
       [135, 8, true],
       [140, 6, true],
     ]);
-    expect(el('collapsed-summary-0')).toHaveTextContent('3 sets · best 135lb × 8');
+    expect(el('done-mark-0')).toBeTruthy();
+    expect(screen.queryByTestId('set-row-0-0')).toBeNull(); // folded
   });
 
   it('checking a set opens nothing and moves nothing; its numbers become the next hints', async () => {
@@ -88,19 +89,20 @@ describe('tracker', () => {
     expect(row(sets()[1])).toEqual([135, 8, true]);
   });
 
-  it('a number you change carries down to the sets below instead of last session (Boostcamp)', async () => {
-    await startWith([BENCH], { history: [lastWeek([[360, 10], [360, 10], [450, 8]])], sets: 3 });
-    expect([shown('weight-0-0').hint, shown('weight-0-1').hint, shown('weight-0-2').hint]).toEqual(['360', '360', '450']);
-    await type('weight-0-0', '385');
-    expect([shown('weight-0-1').hint, shown('weight-0-2').hint]).toEqual(['385', '385']);
-    expect(shown('reps-0-2').hint).toBe('8'); // reps weren't changed: still last session's
+  it('Boostcamp (from a recording): blank to start; the first circle logs last time; then the set above carries', async () => {
+    await startWith([BENCH], { history: [lastWeek([[360, 10], [450, 8], [450, 8]])], sets: 3 });
+    expect([0, 1, 2].map((i) => shown(`weight-0-${i}`).hint)).toEqual(['', '', '']); // no hints from history
     await fireEvent.press(el('check-0-0'));
+    expect(row(sets()[0])).toEqual([360, 10, true]);
+    expect([shown('weight-0-1').hint, shown('weight-0-2').hint]).toEqual(['360', '360']); // not set 2's own 450
+    await type('weight-0-1', '385');
+    expect(shown('weight-0-2').hint).toBe('385');
     await fireEvent.press(el('check-0-1'));
     await fireEvent.press(el('check-0-2'));
     expect(sets().map(row)).toEqual([
+      [360, 10, true],
       [385, 10, true],
       [385, 10, true],
-      [385, 8, true],
     ]);
   });
 
@@ -135,6 +137,59 @@ describe('tracker', () => {
       [60, 12, false],
       [65, 10, false],
     ]);
+  });
+
+  it('the next unchecked set in the workout is marked, and the mark follows each check', async () => {
+    await startWith([BENCH, BENCH], { sets: 2 });
+    // Rows of a finished (folded) exercise are gone, so look only at the circles that exist.
+    const marked = () =>
+      [0, 1].flatMap((ex) =>
+        [0, 1]
+          .filter((i) => {
+            const check = screen.queryByTestId(`check-${ex}-${i}`);
+            return check && within(check).queryByTestId(`up-next-${ex}`);
+          })
+          .map((i) => `${ex}-${i}`),
+      );
+    expect(marked()).toEqual(['0-0']);
+    await log(0, '100', '5');
+    expect(marked()).toEqual(['0-1']);
+    expect(screen.queryByTestId('keypad')).toBeNull(); // marked, not focused
+    await fireEvent.press(el('check-0-1'));
+    expect(marked()).toEqual(['1-0']); // on to the next exercise
+  });
+
+  it('a number typed with the keypad still open is what the circle logs (repro of 24 → 450)', async () => {
+    await startWith([BENCH], { history: [lastWeek([[360, 10], [360, 10], [450, 8], [450, 8]])], sets: 4 });
+    await fireEvent.press(el('prev-0-2')); // copy last time into set 3
+    await fireEvent.press(el('check-0-2'));
+    await type('weight-0-3', '24'); // keypad still open
+    await fireEvent.press(el('check-0-3'));
+    expect(row(sets()[3])).toEqual([24, 8, true]);
+  });
+
+  it('tapping Previous while typing closes the pad, so the field shows what will be logged', async () => {
+    await startWith([BENCH], { history: [lastWeek([[450, 8]])], sets: 1 });
+    await type('weight-0-0', '24');
+    await fireEvent.press(el('prev-0-0')); // copies 450 × 8
+    expect(screen.queryByTestId('keypad')).toBeNull();
+    expect(shown('weight-0-0').value).toBe('450');
+    await fireEvent.press(el('check-0-0'));
+    expect(row(sets()[0])).toEqual([450, 8, true]);
+  });
+
+  it('the pad’s RPE tab sets the set’s RPE; Clear removes it', async () => {
+    await startWith([BENCH], { sets: 1 });
+    await fireEvent.press(el('reps-0-0'));
+    expect(el('keypad-tab-number')).toHaveTextContent('Reps');
+    await fireEvent.press(el('keypad-tab-rpe'));
+    await fireEvent.press(el('keypad-rpe-8.5'));
+    expect(sets()[0].rpe).toBe(8.5);
+    await fireEvent.press(el('keypad-clear'));
+    expect(sets()[0].rpe).toBeNull();
+    await fireEvent.press(el('keypad-tab-number'));
+    await keys('6');
+    expect(sets()[0].reps).toBe(6);
   });
 
   it('an empty circle with nothing to hint from does nothing', async () => {
