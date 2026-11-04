@@ -44,6 +44,10 @@ the phone with no PC after a fiddlier setup.)
   ([altstoreio/AltStore#1840](https://github.com/altstoreio/AltStore/issues/1840)). Don't
   delete AltStore or Liftbook meanwhile: the installed app keeps working until its 7-day
   signing runs out.
+- **"AltServer could not find this device" over Wi-Fi, but it works with the cable:** the PC side
+  is fine (AltServer, Bonjour, firewall) and the router is blocking device discovery (AP/client
+  isolation or filtered multicast/mDNS, common on mesh Wi-Fi). Turn isolation off / allow
+  multicast in the router, or just plug in for installs and the weekly **Refresh All**.
 - **Moving from an install with a different app id** (before `io.liftbook.app`): the new one
   installs next to it. Old app → Profile → **Backup**, new app → Profile → **Restore**, then
   delete the old one.
