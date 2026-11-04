@@ -12,8 +12,10 @@ test.describe('exercise library (free-exercise-db)', () => {
     await tid(page, 'picker-add').click();
     await expect(tid(page, 'exercise-card-0')).toContainText(/Zercher Squats?/);
 
-    // Tapping the name opens its page; never logged → About tab with photos and steps.
+    // Tapping the name in a workout opens its page on History; About has photos and steps.
     await tid(page, 'exercise-card-0').getByText(/^Zercher Squats?$/).click();
+    await expect(page.getByText('No history yet.')).toBeVisible();
+    await tid(page, 'exercise-tab-about').click();
     const howTo = tid(page, 'how-to');
     await expect(howTo).toBeVisible();
     await expect(howTo.locator('img')).toHaveCount(2);

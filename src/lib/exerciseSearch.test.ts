@@ -13,6 +13,13 @@ describe('exercise search ranking', () => {
     expect(top('lateral raise')[0]).toMatch(/^Lateral Raise \(/);
   });
 
+  it('finds the newer staples by the name people use', () => {
+    expect(top('rear delt skier')).toEqual(['Rear Delt Skier']);
+    expect(top('kelso')).toEqual(['Kelso Shrug']);
+    expect(top('y raise')).toEqual(expect.arrayContaining([expect.stringMatching(/^Y Raise \(/)]));
+    expect(top('jm press smith')).toEqual(['JM Press (Smith Machine)']);
+  });
+
   it('still requires every word, and lists alphabetically without a query', () => {
     expect(filterExercises(BUILTIN_EXERCISES, { q: 'squat barbell' }).every((e) => /squat/i.test(e.name) && /barbell/i.test(e.name))).toBe(true);
     const all = filterExercises(BUILTIN_EXERCISES, { q: '' }).map((e) => e.name);

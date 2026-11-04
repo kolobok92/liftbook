@@ -1,5 +1,6 @@
 // Persisted-state versioning, shared by AsyncStorage rehydration (store.ts) and backup restore
 // (Profile), so an old backup goes through the same upgrades as old on-device data.
+import { adoptBuiltinExercises } from './adoptBuiltins';
 import type { Settings } from './types';
 
 /** Bump when the persisted shape changes, and add a step to migrate(). */
@@ -51,7 +52,7 @@ export function parseBackup(text: string): { ok: true; data: BackupData; exporte
   return {
     ok: true,
     exportedAt: typeof m.exportedAt === 'string' ? m.exportedAt : undefined,
-    data: {
+    data: adoptBuiltinExercises({
       programs: m.programs as unknown[],
       activeProgram: m.activeProgram,
       history: m.history as unknown[],
@@ -59,6 +60,6 @@ export function parseBackup(text: string): { ok: true; data: BackupData; exporte
       templates: (m.templates as unknown[]) ?? [],
       oneRepMaxes: (m.oneRepMaxes as Record<string, number>) ?? {},
       settings: (m.settings as Partial<Settings>) ?? {},
-    },
+    }),
   };
 }

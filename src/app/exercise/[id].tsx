@@ -90,6 +90,7 @@ export default function ExerciseDetail() {
           ]}
           value={tab}
           onChange={setTab}
+          testID="exercise-tab"
         />
 
         {tab === 'about' && <HowTo exerciseId={id} />}

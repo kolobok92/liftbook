@@ -4,6 +4,7 @@ import { uid } from './calc';
 import { BUILTIN_EXERCISES } from './exercises';
 import { applyWorkoutToProgram, pendingChangeFor, type ApplyScope, type PendingProgramChange } from './programSync';
 import { pplua } from './seed';
+import { adoptBuiltinExercises } from './adoptBuiltins';
 import { mergePersisted, migrate, PERSIST_VERSION } from './persistence';
 import { debouncedStorage } from './storage';
 import {
@@ -257,7 +258,7 @@ export const useStore = create<State & Actions>()(
         settings: s.settings,
         seeded: s.seeded,
       }),
-      merge: (persisted, current) => mergePersisted(persisted as Partial<State & Actions> | undefined, current, DEFAULT_SETTINGS),
+      merge: (persisted, current) => adoptBuiltinExercises(mergePersisted(persisted as Partial<State & Actions> | undefined, current, DEFAULT_SETTINGS)),
     },
   ),
 );
