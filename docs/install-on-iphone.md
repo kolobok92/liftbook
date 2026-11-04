@@ -20,9 +20,11 @@ One-time setup on the PC:
 
 Install Liftbook:
 
-6. Get the .ipa: GitHub → Actions → **iOS unsigned build** → latest run → Artifacts →
-   `Liftbook-unsigned-ipa`, unzip → `Liftbook-unsigned.ipa`. Put it in your **iCloud Drive**
-   folder on the PC (iCloud for Windows syncs it to the phone).
+6. Get the .ipa: `node scripts/publish-ipa.mjs` builds the pushed `main` on GitHub Actions
+   (~10 min), saves `Liftbook.ipa` and copies it into your **iCloud Drive** folder on the PC
+   (iCloud for Windows syncs it to the phone; iCloud Drive must be on in iCloud for Windows).
+   By hand: GitHub → Actions → **iOS unsigned build** → latest run → Artifacts →
+   `Liftbook-unsigned-ipa`.
 7. On the iPhone: AltStore → **My Apps** → **+** → pick the .ipa from iCloud Drive. Done.
 
 Staying signed: AltStore re-signs Liftbook in the background whenever the phone is on the same
@@ -44,10 +46,13 @@ the phone with no PC after a fiddlier setup.)
   ([altstoreio/AltStore#1840](https://github.com/altstoreio/AltStore/issues/1840)). Don't
   delete AltStore or Liftbook meanwhile: the installed app keeps working until its 7-day
   signing runs out.
-- **"AltServer could not find this device" over Wi-Fi, but it works with the cable:** the PC side
-  is fine (AltServer, Bonjour, firewall) and the router is blocking device discovery (AP/client
-  isolation or filtered multicast/mDNS, common on mesh Wi-Fi). Turn isolation off / allow
-  multicast in the router, or just plug in for installs and the weekly **Refresh All**.
+- **"AltServer could not find this device" over Wi-Fi, but it works with the cable:** Windows
+  finds the phone on Wi-Fi by the Wi-Fi address saved when it was paired by cable (the real
+  one), while the phone announces a private address on your network. iPhone → Settings → Wi-Fi
+  → ⓘ next to your network → **Private Wi-Fi Address: Off**, then restart **Apple Mobile Device
+  Service** (Services app → right-click → Restart, or reboot the PC) and AltServer. Check what
+  the phone announces with `dns-sd -B _apple-mobdev2._tcp local.` (the address before `@`).
+  If it still fails, the router may block multicast/mDNS (AP or client isolation).
 - **Moving from an install with a different app id** (before `io.liftbook.app`): the new one
   installs next to it. Old app → Profile → **Backup**, new app → Profile → **Restore**, then
   delete the old one.

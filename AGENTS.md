@@ -99,6 +99,10 @@ the full suite per iteration.
     crops become baselines: review them. After an intended UI change: `UPDATE_BASELINES=1`.
   - Toolchain: `C:\dev\android-sdk` (JDK, SDK, AVD), `source /c/dev/android-sdk/env.sh`;
     Maestro CLI in `~/.maestro`. Emulator log: `.cache/emulator.log`.
+- **Phone build:** after pushing, `node scripts/publish-ipa.mjs` runs ios-unsigned.yml, waits,
+  saves `Liftbook.ipa` and copies it to iCloud Drive; the user installs it from the phone
+  (AltStore, over Wi-Fi). Tell them when it's there. Never put paths with the Windows user
+  name in tracked files (the script uses `homedir()`).
 - **iOS gate (GitHub Actions, manual):** `gh workflow run ios-simulator.yml`. macOS minutes are
   scarce (10x on a private repo): run it only when Android passes. JS-only changes reuse the
   cached native app (Expo fingerprint, ~10 min); native changes rebuild (~30 min). Anything in
