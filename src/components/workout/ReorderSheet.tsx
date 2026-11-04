@@ -20,7 +20,7 @@ export function ReorderSheet({
 }) {
   const { byId } = useExercises();
   return (
-    <Sheet visible={visible} onClose={onClose} title="Reorder Exercises" footer={<Button title="Done" onPress={onClose} />}>
+    <Sheet visible={visible} onClose={onClose} title="Reorder exercises" footer={<Button title="Done" onPress={onClose} />}>
       {exercises.map((e, i) => {
         const done = e.sets.length > 0 && e.sets.every((s) => s.done);
         return (
@@ -29,7 +29,7 @@ export function ReorderSheet({
             testID={`reorder-row-${i}`}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.surface2, borderRadius: R.md, paddingVertical: 10, paddingHorizontal: 12 }}
           >
-            <Txt dim weight="700" style={{ width: 20 }}>
+            <Txt dim weight="600" style={{ width: 20 }}>
               {i + 1}
             </Txt>
             <View style={{ flex: 1 }}>

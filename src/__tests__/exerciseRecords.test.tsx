@@ -4,9 +4,10 @@ import { useStore } from '@/lib/store';
 import type { Workout } from '@/lib/types';
 import ExerciseScreen from '@/app/exercise/[id]';
 
+let mockParams: { id: string; tab?: string } = { id: 'bench-press-barbell' };
 jest.mock('expo-router', () => ({
   router: { push: () => {}, back: () => {} },
-  useLocalSearchParams: () => ({ id: 'bench-press-barbell' }),
+  useLocalSearchParams: () => mockParams,
   Stack: { Screen: () => null },
 }));
 
@@ -32,5 +33,17 @@ describe('exercise records', () => {
     expect(within(screen.getByTestId('record-weight')).getByText(/205/)).toHaveTextContent('205 lb');
     // Epley: 205 × (1 + 3/30) = 225.5 → 226
     expect(screen.getByTestId('record-e1rm')).toHaveTextContent(/226\s*lb/);
+  });
+
+  it('opened from a workout (?tab=history), it starts on History', async () => {
+    mockParams = { id: 'bench-press-barbell', tab: 'history' };
+    await act(async () => {
+      useStore.getState().resetAll();
+      useStore.setState({ history: [bench(day(8), [[205, 3]])] });
+    });
+    await render(<ExerciseScreen />);
+    expect(screen.queryByTestId('record-e1rm')).toBeNull();
+    expect(screen.getByText('Push')).toBeTruthy();
+    mockParams = { id: 'bench-press-barbell' };
   });
 });

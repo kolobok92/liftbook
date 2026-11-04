@@ -5,7 +5,7 @@ import type { Unit } from '@/lib/types';
 import { C } from '@/lib/theme';
 import { Txt } from './ui';
 
-/** "🏆 Bench Press — 205 lb · Max Weight, Est. 1RM" — one row per exercise. */
+/** "Bench Press — 205 lb · Max Weight, Est. 1RM" — one row per exercise. */
 export function PRList({ prs, unit }: { prs: PR[]; unit: Unit }) {
   const { byId } = useExercises();
   return (
@@ -18,7 +18,7 @@ export function PRList({ prs, unit }: { prs: PR[]; unit: Unit }) {
               {g.kinds.map((k) => PR_LABEL[k]).join(' · ')}
             </Txt>
           </View>
-          <Txt weight="800" color={C.orange}>
+          <Txt weight="600" color={C.orange}>
             {fmtPR(g.headline, unit)}
           </Txt>
         </View>

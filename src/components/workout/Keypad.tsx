@@ -117,7 +117,7 @@ export function Keypad({ scrollRef, scrollY }: { scrollRef?: RefObject<Component
           }}
           style={[styles.tool, styles.nextBtn]}
         >
-          <Txt weight="800" color={C.bg}>
+          <Txt weight="600" color={C.bg}>
             {target.next ? 'Next' : 'Done'}
           </Txt>
         </Pressable>
@@ -139,7 +139,7 @@ export function Keypad({ scrollRef, scrollY }: { scrollRef?: RefObject<Component
                   }}
                   style={[styles.key, styles.rpeKey, on && { backgroundColor: C.accent }]}
                 >
-                  <Txt size={20} weight="700" color={on ? C.onAccent : C.text}>
+                  <Txt size={20} weight="600" color={on ? C.onAccent : C.text}>
                     {fmtNum(v)}
                   </Txt>
                   <Txt size={11} color={on ? C.onAccent : C.textDim}>

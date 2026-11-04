@@ -95,9 +95,9 @@ appId: ${APP_ID}
 - launchApp
 - extendedWaitUntil:
     visible:
-      id: "active-workout-bar"
+      id: "resume-workout"
     timeout: 30000
 - tapOn:
-    id: "active-workout-bar"
+    id: "resume-workout"
 - assertVisible: '.*135lb × 8'
 - takeScreenshot: 08-after-relaunch

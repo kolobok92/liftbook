@@ -19,7 +19,7 @@ type Tab = 'about' | 'records' | 'chart' | 'history';
 type Metric = 'e1rm' | 'weight' | 'volume';
 
 export default function ExerciseDetail() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, tab: openOn } = useLocalSearchParams<{ id: string; tab?: string }>();
   const { byId } = useExercises();
   const ex = byId[id];
   const history = useStore((s) => s.history);
@@ -27,7 +27,10 @@ export default function ExerciseDetail() {
   const entered1rm = useStore((s) => s.oneRepMaxes[id]);
   const hasHowTo = !!exerciseDetails(id);
   // New-to-you exercises open on How to; logged ones on Records.
-  const [tab, setTab] = useState<Tab>(() => (hasHowTo && recordsFor(useStore.getState().history, id).maxReps === 0 ? 'about' : 'records'));
+  // From a workout you want last sessions first, so the tracker opens on History.
+  const [tab, setTab] = useState<Tab>(() =>
+    openOn === 'history' ? 'history' : hasHowTo && recordsFor(useStore.getState().history, id).maxReps === 0 ? 'about' : 'records',
+  );
   const [metric, setMetric] = useState<Metric>('e1rm');
 
   const records = useMemo(() => recordsFor(history, id), [history, id]);
@@ -67,7 +70,7 @@ export default function ExerciseDetail() {
       <Stack.Screen options={{ title: '' }} />
       <Screen header>
         <View style={{ gap: 4 }}>
-          <Txt size={24} weight="800">
+          <Txt size={24} weight="600">
             {name}
           </Txt>
           {ex && (
@@ -106,7 +109,7 @@ export default function ExerciseDetail() {
                   <RecordTile label="Max Reps" value={String(records.maxReps)} />
                 </View>
                 <Card>
-                  <Txt weight="700">Rep Maxes</Txt>
+                  <Txt weight="600">Rep maxes</Txt>
                   <View style={{ flexDirection: 'row' }}>
                     <Txt faint size={12} style={{ width: 52 }}>
                       Reps
@@ -138,7 +141,7 @@ export default function ExerciseDetail() {
                 </Card>
                 {prTimeline.length > 0 && (
                   <Card>
-                    <Txt weight="700">PR History</Txt>
+                    <Txt weight="600">PR History</Txt>
                     {prTimeline.map((p, i) => (
                       <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                         <Txt dim>{fmtDate(p.t, { month: 'short', day: 'numeric', year: 'numeric' })}</Txt>
@@ -151,7 +154,7 @@ export default function ExerciseDetail() {
             )}
             <Card style={{ flexDirection: 'row', alignItems: 'center' }}>
               <View style={{ flex: 1 }}>
-                <Txt weight="700">Training max</Txt>
+                <Txt weight="600">Training max</Txt>
                 <Txt dim size={13}>
                   {entered1rm ? `${fmtNum(entered1rm)} ${unit} (entered)` : 'Not set — % sets use your est. 1RM'}
                 </Txt>
@@ -160,7 +163,7 @@ export default function ExerciseDetail() {
             </Card>
             {ex && (ex.primary.length > 0 || ex.secondary.length > 0) && (
               <Card>
-                <Txt weight="700">Muscles Worked</Txt>
+                <Txt weight="600">Muscles Worked</Txt>
                 <MuscleMap values={muscles} max={3} scale={0.55} />
               </Card>
             )}
@@ -188,7 +191,7 @@ export default function ExerciseDetail() {
             {logs.map(({ w, sets, notes }) => (
               <Card key={w.id} onPress={() => router.push(`/history/${w.id}`)}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Txt weight="700">{w.name}</Txt>
+                  <Txt weight="600">{w.name}</Txt>
                   <Txt dim size={13}>
                     {fmtDate(w.startedAt, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                   </Txt>
@@ -196,7 +199,7 @@ export default function ExerciseDetail() {
                 {sets.map((s, i) => (
                   <View key={s.id} style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
                     <View style={{ width: 22, height: 22, borderRadius: 5, alignItems: 'center', justifyContent: 'center', backgroundColor: s.type === 'normal' ? C.surface2 : SET_TYPE_COLOR[s.type] + '33' }}>
-                      <Txt size={11} weight="800" color={s.type === 'normal' ? C.textDim : SET_TYPE_COLOR[s.type]}>
+                      <Txt size={11} weight="600" color={s.type === 'normal' ? C.textDim : SET_TYPE_COLOR[s.type]}>
                         {setLabels(sets)[i]}
                       </Txt>
                     </View>
@@ -224,7 +227,7 @@ export default function ExerciseDetail() {
         {ex?.custom && (
           <Button
             variant="danger"
-            title="Delete Custom Exercise"
+            title="Delete custom exercise"
             onPress={async () => {
               if (await confirm('Delete exercise?', 'It is removed from the library. Logged sets stay in your history.', 'Delete', true)) {
                 useStore.getState().deleteCustomExercise(ex.id);
@@ -245,7 +248,7 @@ function RecordTile({ label, value, unit, testID }: { label: string; value: stri
       <Txt dim size={12}>
         {label}
       </Txt>
-      <Txt size={22} weight="800" color={C.orange}>
+      <Txt size={22} weight="600" color={C.orange}>
         {value}
         {unit ? <Txt size={13} dim>{` ${unit}`}</Txt> : null}
       </Txt>

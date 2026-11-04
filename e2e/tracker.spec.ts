@@ -43,7 +43,7 @@ test.describe('workout tracker', () => {
     await tid(page, 'summary-done').click();
 
     // Loop program: next up is day 2 and the workout is in history with only the checked set.
-    await expect(page.getByText('UP NEXT · CYCLE 1 · DAY 2')).toBeVisible();
+    await expect(page.getByText('Up next · Cycle 1 · Day 2')).toBeVisible();
     const s = await stored(page);
     expect(s.history).toHaveLength(1);
     expect(s.history[0].exercises).toHaveLength(1);
@@ -187,10 +187,32 @@ test.describe('workout tracker', () => {
     await tid(page, 'start-next-workout').click();
     await typeSet(page, 'weight-0-0', '27.5');
     await tid(page, 'minimize-workout').click();
-    await expect(tid(page, 'active-workout-bar')).toBeVisible();
+    await expect(tid(page, 'resume-workout')).toBeVisible();
     await page.reload();
-    await tid(page, 'active-workout-bar').click();
+    await tid(page, 'resume-workout').click();
     expect((await setRow(page, 0, 0)).weight).toBe('27.5');
+  });
+
+  test('while a workout runs, Resume is the one primary action on Home; other tabs get the bar', async ({ page }) => {
+    await openWith(page);
+    await tid(page, 'start-next-workout').click();
+    await typeSet(page, 'weight-0-0', '20');
+    await typeSet(page, 'reps-0-0', '12');
+    await tid(page, 'check-0-0').click();
+    await tid(page, 'minimize-workout').click();
+    const card = tid(page, 'resume-workout-card');
+    await expect(card).toContainText('In progress');
+    await expect(card).toContainText('Set 2 of');
+    await expect(card).toContainText(/1 of \d+ sets/);
+    // Resume sits above the program card, and the program's Start steps down to secondary.
+    const resumeY = (await tid(page, 'resume-workout').boundingBox())!.y;
+    expect(resumeY).toBeLessThan((await tid(page, 'start-next-workout').boundingBox())!.y);
+    const fill = (id: string) => tid(page, id).evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(await fill('start-next-workout')).not.toBe(await fill('resume-workout'));
+    await expect(tid(page, 'active-workout-bar')).toHaveCount(0);
+    await page.getByText('History', { exact: true }).last().click();
+    await tid(page, 'active-workout-bar').click();
+    await expect(tid(page, 'finish-workout')).toBeVisible();
   });
 
   test('discarding a workout leaves no history and keeps the program position', async ({ page }) => {
@@ -200,7 +222,7 @@ test.describe('workout tracker', () => {
     await typeSet(page, 'weight-0-0', '30');
     await tid(page, 'check-0-0').click();
     await tid(page, 'discard-workout').click();
-    await expect(page.getByText('UP NEXT · CYCLE 1 · DAY 1')).toBeVisible();
+    await expect(page.getByText('Up next · Cycle 1 · Day 1')).toBeVisible();
     expect((await stored(page)).history).toHaveLength(0);
   });
 
@@ -209,7 +231,7 @@ test.describe('workout tracker', () => {
     await openWith(page);
     await tid(page, 'start-next-workout').click();
     await tid(page, 'finish-workout').click();
-    await expect(page.getByText('UP NEXT · CYCLE 1 · DAY 1')).toBeVisible();
+    await expect(page.getByText('Up next · Cycle 1 · Day 1')).toBeVisible();
     expect((await stored(page)).history).toHaveLength(0);
   });
 
@@ -226,7 +248,7 @@ test.describe('workout tracker', () => {
     await tid(page, 'start-empty-workout').click();
     expect(asked).toContain('Discard the current workout');
     // Dismissed → original workout still active.
-    await tid(page, 'active-workout-bar').click();
+    await tid(page, 'resume-workout').click();
     expect((await setRow(page, 0, 0)).weight).toBe('30');
   });
 });

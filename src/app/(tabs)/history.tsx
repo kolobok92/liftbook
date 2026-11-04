@@ -65,7 +65,7 @@ export default function History() {
             <Ionicons name="chevron-back" size={20} color={C.text} />
           </Pressable>
           <View style={{ flex: 1, alignItems: 'center' }}>
-            <Txt weight="700">{md.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</Txt>
+            <Txt weight="600">{md.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</Txt>
             <Txt dim size={12}>
               {monthCount} workout{monthCount === 1 ? '' : 's'}
             </Txt>
@@ -120,7 +120,7 @@ export default function History() {
       {sorted.length === 0 && <Empty icon="calendar-outline" title="No workouts yet" body="Finished workouts show up here." />}
       {groups.map((g) => (
         <View key={g.title} style={{ gap: 10 }}>
-          <Txt dim size={13} weight="700" style={{ marginTop: 4 }}>
+          <Txt dim size={13} weight="600" style={{ marginTop: 4 }}>
             {g.title.toUpperCase()}
           </Txt>
           {g.items.map((w) => (

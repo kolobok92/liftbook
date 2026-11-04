@@ -54,7 +54,7 @@ export default function RepMaxes() {
           );
         })}
       </Card>
-      <Button variant="secondary" title="One Rep Max Calculator" icon="calculator-outline" onPress={() => setCalc(true)} />
+      <Button variant="secondary" title="One rep max calculator" icon="calculator-outline" onPress={() => setCalc(true)} />
       <CalcSheet visible={calc} onClose={() => setCalc(false)} />
     </Screen>
   );

@@ -28,12 +28,12 @@ export function ProgramExerciseEditor({
   return (
     <View style={[styles.card, supersetLabel ? styles.superset : null]} testID={`builder-exercise-${index}`}>
       {supersetLabel && (
-        <Txt size={11} weight="800" color={C.accentText}>
+        <Txt size={11} weight="600" color={C.accentText}>
           {supersetLabel}
         </Txt>
       )}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <Txt weight="700" style={{ flex: 1 }} numberOfLines={1}>
+        <Txt weight="600" style={{ flex: 1 }} numberOfLines={1}>
           {index + 1}. {exerciseName(byId, pe.exerciseId)}
         </Txt>
         <Pressable testID={`builder-exercise-menu-${index}`} accessibilityLabel="Exercise options" hitSlop={8} onPress={onMenu}>
@@ -55,7 +55,7 @@ export function ProgramExerciseEditor({
             onPress={() => onChange({ ...pe, sets: pe.sets.map((x, j) => (j === i ? { ...x, type: NEXT_TYPE[x.type] } : x)) })}
             style={[styles.badge, s.type !== 'normal' && { backgroundColor: SET_TYPE_COLOR[s.type] + '33' }]}
           >
-            <Txt size={12} weight="800" color={s.type === 'normal' ? C.textDim : SET_TYPE_COLOR[s.type]}>
+            <Txt size={12} weight="600" color={s.type === 'normal' ? C.textDim : SET_TYPE_COLOR[s.type]}>
               {setLabels(pe.sets)[i]}
             </Txt>
           </Pressable>

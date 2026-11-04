@@ -71,7 +71,7 @@ export default function NewExercise() {
           <Chip key={m} label={MUSCLE_LABEL[m]} active={secondary.includes(m)} onPress={() => toggle(secondary, setSecondary, m)} />
         ))}
       </View>
-      <Button testID="save-custom-exercise" title="Save Exercise" onPress={save} />
+      <Button testID="save-custom-exercise" title="Save exercise" onPress={save} />
     </Screen>
   );
 }

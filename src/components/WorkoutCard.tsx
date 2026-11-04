@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { View } from 'react-native';
 import { bestSet, fmtDate, fmtDurationShort, fmtSet, fmtVolume, workoutDurationMs, workoutVolume } from '@/lib/calc';
@@ -13,7 +14,7 @@ export function WorkoutCard({ w, unit, prCount }: { w: Workout; unit: Unit; prCo
     <Card testID={`history-card-${w.id}`} onPress={() => router.push(`/history/${w.id}`)}>
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
         <View style={{ flex: 1 }}>
-          <Txt size={16} weight="700">
+          <Txt size={16} weight="600">
             {w.name}
           </Txt>
           <Txt dim size={12}>
@@ -22,18 +23,27 @@ export function WorkoutCard({ w, unit, prCount }: { w: Workout; unit: Unit; prCo
           </Txt>
         </View>
         {prCount ? (
-          <Txt size={12} weight="800" color={C.orange}>
-            🏆 {prCount} PR{prCount > 1 ? 's' : ''}
-          </Txt>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Ionicons name="trophy-outline" size={14} color={C.orange} />
+            <Txt size={12} weight="600" color={C.orange}>
+              {prCount} PR{prCount > 1 ? 's' : ''}
+            </Txt>
+          </View>
         ) : null}
       </View>
       <View style={{ flexDirection: 'row', gap: 16 }}>
-        <Txt dim size={13}>
-          ⏱ {fmtDurationShort(workoutDurationMs(w))}
-        </Txt>
-        <Txt dim size={13}>
-          ⚖ {fmtVolume(workoutVolume(w))} {unit}
-        </Txt>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <Ionicons name="time-outline" size={14} color={C.textDim} />
+          <Txt dim size={13}>
+            {fmtDurationShort(workoutDurationMs(w))}
+          </Txt>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <Ionicons name="barbell-outline" size={14} color={C.textDim} />
+          <Txt dim size={13}>
+            {fmtVolume(workoutVolume(w))} {unit}
+          </Txt>
+        </View>
       </View>
       <View style={{ gap: 3 }}>
         <View style={{ flexDirection: 'row' }}>

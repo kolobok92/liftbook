@@ -30,7 +30,7 @@ export default function Programs() {
         <Card key={p.id} testID={`program-card-${p.id}`} onPress={() => router.push(`/program/${p.id}`)}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <View style={{ flex: 1 }}>
-              <Txt size={18} weight="800">
+              <Txt size={18} weight="600">
                 {p.name}
               </Txt>
               <Txt dim size={13}>
@@ -39,7 +39,7 @@ export default function Programs() {
             </View>
             {p.id === activeId && (
               <View style={{ backgroundColor: C.accentDim, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 }}>
-                <Txt size={11} weight="800" color={C.accentText}>
+                <Txt size={11} weight="600" color={C.accentText}>
                   ACTIVE
                 </Txt>
               </View>
@@ -54,7 +54,7 @@ export default function Programs() {
         </Card>
       ))}
 
-      <SectionTitle>Workout Templates</SectionTitle>
+      <SectionTitle>Workout templates</SectionTitle>
       {templates.length === 0 && (
         <Txt faint size={13}>
           Finish a free-form workout and choose “Save as template” to reuse it here.
@@ -63,7 +63,7 @@ export default function Programs() {
       {templates.map((t) => (
         <Card key={t.id} style={{ flexDirection: 'row', alignItems: 'center' }}>
           <View style={{ flex: 1 }}>
-            <Txt weight="700">{t.name}</Txt>
+            <Txt weight="600">{t.name}</Txt>
             <Txt dim size={12}>
               {t.exercises.length} exercises
             </Txt>

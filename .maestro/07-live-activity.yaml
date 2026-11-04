@@ -18,5 +18,5 @@ tags:
 - launchApp # back via the app icon; the workout is still running
 - extendedWaitUntil:
     visible:
-      id: "active-workout-bar"
+      id: "resume-workout"
     timeout: 10000

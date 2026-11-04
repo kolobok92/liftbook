@@ -71,7 +71,7 @@ export function TrendLine({ points, format = (v) => String(Math.round(v)), heigh
             autoAdjustPointerLabelPosition: true,
             pointerLabelComponent: (items: { value: number }[], _s: unknown, idx: number) => (
               <View style={{ backgroundColor: C.surface3, borderRadius: 6, padding: 6 }}>
-                <Txt size={12} weight="700">
+                <Txt size={12} weight="600">
                   {format(items[0].value + offset)}
                 </Txt>
                 <Txt size={11} dim>

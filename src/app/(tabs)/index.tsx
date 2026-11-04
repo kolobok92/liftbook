@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { DayPreview } from '@/components/DayPreview';
+import { ResumeWorkoutCard } from '@/components/ResumeWorkoutCard';
 import { Screen } from '@/components/Screen';
 import { startWorkout } from '@/components/startWorkout';
 import { Button, Card, H1, SectionTitle, Sheet, Txt } from '@/components/ui';
@@ -19,6 +20,7 @@ export default function Home() {
   const history = useStore((s) => s.history);
   const templates = useStore((s) => s.templates);
   const unit = useStore((s) => s.settings.unit);
+  const inProgress = useStore((s) => !!s.active);
   const program = programs.find((p) => p.id === activeProgram?.programId);
   const next = program && activeProgram ? nextProgramSlot(program, activeProgram) : undefined;
   const [viewWeek, setViewWeek] = useState<number | null>(null);
@@ -43,14 +45,16 @@ export default function Home() {
         <H1>Today</H1>
       </View>
 
+      <ResumeWorkoutCard />
+
       {program && activeProgram ? (
         <Card>
           <Pressable onPress={() => router.push(`/program/${program.id}`)} style={{ flexDirection: 'row', alignItems: 'center' }}>
             <View style={{ flex: 1 }}>
-              <Txt size={12} dim weight="700" style={{ letterSpacing: 0.6 }}>
-                CURRENT PROGRAM
+              <Txt size={13} dim>
+                Current program
               </Txt>
-              <Txt size={20} weight="800">
+              <Txt size={20} weight="600">
                 {program.name}
               </Txt>
             </View>
@@ -72,18 +76,19 @@ export default function Home() {
           )}
 
           {!next && (
-            <Txt color={C.green} weight="700">
+            <Txt color={C.green} weight="600">
               Program complete — nice work.
             </Txt>
           )}
 
-          {/* Current day, highlighted and expanded: start or skip in one tap (Boostcamp). */}
+          {/* Current day, highlighted and expanded: start or skip in one tap (Boostcamp). While a
+              workout is running the Resume card above owns the accent, so this one steps back. */}
           {next && nextDay && (
-            <View testID="up-next" style={{ backgroundColor: C.surface2, borderRadius: R.md, borderWidth: 1.5, borderColor: C.accent, padding: 14, gap: 10, marginTop: 4 }}>
-              <Txt size={12} color={C.accentText} weight="700">
-                UP NEXT · {isLoop ? 'CYCLE' : 'WEEK'} {next.week + 1} · DAY {next.day + 1}
+            <View testID="up-next" style={{ backgroundColor: C.surface2, borderRadius: R.md, borderWidth: 1, borderColor: inProgress ? C.border : C.accent, padding: 16, gap: 12, marginTop: 4 }}>
+              <Txt size={13} color={inProgress ? C.textDim : C.accentText}>
+                Up next · {isLoop ? 'Cycle' : 'Week'} {next.week + 1} · Day {next.day + 1}
               </Txt>
-              <Txt size={18} weight="700">
+              <Txt size={18} weight="600">
                 {nextDay.name}
               </Txt>
               <DayPreview day={nextDay} max={6} />
@@ -91,7 +96,8 @@ export default function Home() {
                 <Button
                   testID="start-next-workout"
                   style={{ flex: 1 }}
-                  title="Start Workout"
+                  title="Start workout"
+                  variant={inProgress ? 'secondary' : 'primary'}
                   icon="play"
                   onPress={() => startWorkout(() => useStore.getState().startProgramWorkout(program.id, next.week, next.day))}
                 />
@@ -120,7 +126,7 @@ export default function Home() {
                   backgroundColor: w === week ? C.accent : C.surface2,
                 }}
               >
-                <Txt size={13} weight="700" color={w === week ? C.onAccent : C.textDim}>
+                <Txt size={13} weight="600" color={w === week ? C.onAccent : C.textDim}>
                   W{w + 1}
                 </Txt>
               </Pressable>
@@ -163,18 +169,18 @@ export default function Home() {
         </Card>
       ) : (
         <Card>
-          <Txt size={17} weight="700">
+          <Txt size={17} weight="600">
             No active program
           </Txt>
           <Txt dim>Pick one of your programs or build a new one to get a guided week-by-week plan.</Txt>
-          <Button title="Go to Programs" variant="secondary" onPress={() => router.push('/programs')} />
+          <Button title="Go to programs" variant="secondary" onPress={() => router.push('/programs')} />
         </Card>
       )}
 
-      <SectionTitle>Quick Start</SectionTitle>
+      <SectionTitle>Quick start</SectionTitle>
       <Button
         testID="start-empty-workout"
-        title="Start Empty Workout"
+        title="Start empty workout"
         variant="secondary"
         icon="add"
         onPress={() => startWorkout(() => useStore.getState().startEmptyWorkout())}
@@ -183,7 +189,7 @@ export default function Home() {
         <Card key={t.id} onPress={() => startWorkout(() => useStore.getState().startFromTemplate(t))} style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Ionicons name="document-text-outline" size={20} color={C.textDim} />
           <View style={{ flex: 1 }}>
-            <Txt weight="700">{t.name}</Txt>
+            <Txt weight="600">{t.name}</Txt>
             <Txt dim size={12}>
               {t.exercises.length} exercises · template
             </Txt>
@@ -199,7 +205,7 @@ export default function Home() {
         <Card key={w.id}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Pressable testID={`recent-${w.id}`} style={{ flex: 1 }} onPress={() => router.push(`/history/${w.id}`)}>
-              <Txt weight="700">{w.name}</Txt>
+              <Txt weight="600">{w.name}</Txt>
               <Txt dim size={12}>
                 {fmtDate(w.startedAt, { weekday: 'short', month: 'short', day: 'numeric' })} · {fmtDurationShort(workoutDurationMs(w))} ·{' '}
                 {fmtVolume(workoutVolume(w))} {unit}
@@ -213,13 +219,13 @@ export default function Home() {
       <Sheet visible={!!preview} onClose={() => setPreview(null)} title={preview ? `${isLoop ? 'Cycle' : 'Week'} ${preview.week + 1} · Day ${preview.day + 1}` : ''}>
         {previewDay && preview && program && activeProgram && (
           <>
-            <Txt size={18} weight="700">
+            <Txt size={18} weight="600">
               {previewDay.name}
             </Txt>
             <DayPreview day={previewDay} />
             <Button
               testID="start-preview-workout"
-              title="Start This Workout"
+              title="Start this workout"
               icon="play"
               onPress={() => {
                 const p = preview;
@@ -240,7 +246,7 @@ export default function Home() {
               ) : (
                 <Button
                   variant="secondary"
-                  title="View Logged Workout"
+                  title="View logged workout"
                   onPress={() => {
                     const id = activeProgram.completed[`${preview.week}-${preview.day}`];
                     setPreview(null);
@@ -251,7 +257,7 @@ export default function Home() {
             ) : (
               <Button
                 variant="ghost"
-                title="Skip This Workout"
+                title="Skip this workout"
                 onPress={() => {
                   useStore.getState().setSlotSkipped(preview.week, preview.day, true);
                   setPreview(null);

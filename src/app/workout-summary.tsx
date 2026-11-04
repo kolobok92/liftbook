@@ -35,7 +35,7 @@ export default function WorkoutSummary() {
     <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: 16, paddingTop: insets.top + 24, gap: 14, paddingBottom: 40 }}>
       <View style={{ alignItems: 'center', gap: 6 }}>
         <Ionicons name="trophy" size={44} color={C.accent} />
-        <Txt size={24} weight="800">
+        <Txt size={24} weight="600">
           Workout Complete
         </Txt>
         <Txt dim>{w.name}</Txt>
@@ -50,9 +50,12 @@ export default function WorkoutSummary() {
 
       {result.prs.length > 0 && (
         <Card testID="summary-prs">
-          <Txt weight="800" color={C.orange}>
-            🏆 New Personal Records
-          </Txt>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons name="trophy-outline" size={16} color={C.orange} />
+            <Txt weight="600" color={C.orange}>
+              New personal records
+            </Txt>
+          </View>
           <PRList prs={result.prs} unit={unit} />
         </Card>
       )}
@@ -75,13 +78,13 @@ export default function WorkoutSummary() {
 
       {!w.programRef && (
         <Card>
-          <Txt weight="700">Save as template</Txt>
+          <Txt weight="600">Save as template</Txt>
           {saved ? (
-            <Txt color={C.green}>Saved. Start it from Home → Quick Start.</Txt>
+            <Txt color={C.green}>Saved. Start it from Home → Quick start</Txt>
           ) : (
             <>
               <Field value={templateName} onChangeText={setTemplateName} placeholder={w.name} />
-              <Button title="Save Template" variant="secondary" onPress={saveTemplate} />
+              <Button title="Save template" variant="secondary" onPress={saveTemplate} />
             </>
           )}
         </Card>
@@ -95,7 +98,7 @@ export default function WorkoutSummary() {
 function Stat({ label, value, suffix }: { label: string; value: string; suffix?: string }) {
   return (
     <View style={{ alignItems: 'center' }}>
-      <Txt size={22} weight="800">
+      <Txt size={22} weight="600">
         {value}
         {suffix ? <Txt size={12} dim>{` ${suffix}`}</Txt> : null}
       </Txt>

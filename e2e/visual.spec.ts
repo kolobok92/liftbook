@@ -79,6 +79,15 @@ test.describe('visual @visual', () => {
     await snap(page, 'home', tid(page, 'start-next-workout'));
   });
 
+  test('home: a workout in progress leads with Resume', async ({ page }) => {
+    await open(page);
+    await tid(page, 'start-next-workout').click();
+    await tid(page, 'check-0-0').click();
+    await tid(page, 'minimize-workout').click();
+    await expect(tid(page, 'resume-workout-card')).toContainText('1 of');
+    await expect(tid(page, 'resume-workout-card')).toHaveScreenshot('home-resume-card.png', { ...opts, mask: [tid(page, 'resume-elapsed')] });
+  });
+
   test('tracker: fresh, then mid-set', async ({ page }) => {
     await open(page);
     await tid(page, 'start-next-workout').click();

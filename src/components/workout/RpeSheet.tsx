@@ -38,7 +38,7 @@ export function RpeSheet({ visible, value, onPick, onClose }: { visible: boolean
                 backgroundColor: selected ? C.accent : C.surface3,
               }}
             >
-              <Txt size={20} weight="800" color={selected ? C.onAccent : C.text}>
+              <Txt size={20} weight="600" color={selected ? C.onAccent : C.text}>
                 {mode === 'rpe' ? fmtNum(v) : `${fmtNum(rir)}`}
               </Txt>
               <Txt size={11} color={selected ? C.onAccent : C.textDim}>

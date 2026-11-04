@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState, type ComponentRef } from 'react';
 import { Pressable, ScrollView, TextInput, View } from 'react-native';
@@ -56,13 +57,13 @@ export default function WorkoutDetail() {
           headerRight: () =>
             editing ? (
               <Pressable style={{ paddingHorizontal: 12 }} testID="save-workout-edit" onPress={saveEdit} hitSlop={8}>
-                <Txt weight="700" color={C.accentText}>
+                <Txt weight="600" color={C.accentText}>
                   Save
                 </Txt>
               </Pressable>
             ) : (
               <Pressable style={{ paddingHorizontal: 12 }} testID="edit-workout" onPress={beginEdit} hitSlop={8}>
-                <Txt weight="700" color={C.accentText}>
+                <Txt weight="600" color={C.accentText}>
                   Edit
                 </Txt>
               </Pressable>
@@ -72,7 +73,7 @@ export default function WorkoutDetail() {
       <Screen header scrollRef={scrollRef} onScrollY={(y) => (scrollY.current = y)} overlay={editing ? <Keypad scrollRef={scrollRef} scrollY={scrollY} /> : null}>
         {editing && draft ? (
           <>
-            <TextInput value={draft.name} onChangeText={(name) => setDraft({ ...draft, name })} style={{ color: C.text, fontSize: 24, fontWeight: '800', padding: 0 }} />
+            <TextInput value={draft.name} onChangeText={(name) => setDraft({ ...draft, name })} style={{ color: C.text, fontSize: 24, fontWeight: '600', padding: 0 }} />
             <NoteField testID="edit-workout-note" value={draft.notes} onChangeText={(notes) => setDraft({ ...draft, notes })} placeholder="Workout notes" />
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <Txt dim>Duration (min)</Txt>
@@ -96,14 +97,14 @@ export default function WorkoutDetail() {
                   setDraft(null);
                 }}
               />
-              <Button style={{ flex: 1 }} title="Save Changes" onPress={saveEdit} />
+              <Button style={{ flex: 1 }} title="Save changes" onPress={saveEdit} />
             </View>
             <KeypadSpacer />
           </>
         ) : (
           <>
             <View style={{ gap: 4 }}>
-              <Txt size={24} weight="800">
+              <Txt size={24} weight="600">
                 {w.name}
               </Txt>
               <Txt dim>
@@ -127,15 +128,18 @@ export default function WorkoutDetail() {
             </Card>
             {prs.length > 0 && (
               <Card>
-                <Txt weight="800" color={C.orange}>
-                  🏆 Personal Records
-                </Txt>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Ionicons name="trophy-outline" size={16} color={C.orange} />
+                  <Txt weight="600" color={C.orange}>
+                    Personal records
+                  </Txt>
+                </View>
                 <PRList prs={prs} unit={unit} />
               </Card>
             )}
             {w.exercises.map((e, ei) => (
               <Card key={e.id} onPress={() => router.push(`/exercise/${e.exerciseId}`)}>
-                <Txt weight="700" color={C.accentText}>
+                <Txt weight="600" color={C.accentText}>
                   {ei + 1}. {exerciseName(byId, e.exerciseId)}
                 </Txt>
                 {e.notes ? (
@@ -155,16 +159,19 @@ export default function WorkoutDetail() {
                         {s.rpe != null ? <Txt dim>{`  @${fmtNum(s.rpe)}`}</Txt> : null}
                       </Txt>
                       {pr && (
-                        <Txt size={12} color={C.orange}>
-                          🏆 PR
-                        </Txt>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Ionicons name="trophy-outline" size={12} color={C.orange} />
+                          <Txt size={12} color={C.orange}>
+                            PR
+                          </Txt>
+                        </View>
                       )}
                     </View>
                   );
                 })}
               </Card>
             ))}
-            <Button testID="repeat-workout" title="Repeat Workout" icon="repeat" onPress={() => startWorkout(() => useStore.getState().startFromWorkout(workout))} />
+            <Button testID="repeat-workout" title="Repeat workout" icon="repeat" onPress={() => startWorkout(() => useStore.getState().startFromWorkout(workout))} />
             <Button
               variant="secondary"
               title="Save as Template"
@@ -177,7 +184,7 @@ export default function WorkoutDetail() {
             <Button
               testID="delete-workout"
               variant="danger"
-              title="Delete Workout"
+              title="Delete workout"
               icon="trash-outline"
               onPress={async () => {
                 if (await confirm('Delete workout?', 'This permanently removes it from your history.', 'Delete', true)) {
@@ -196,7 +203,7 @@ export default function WorkoutDetail() {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <View style={{ alignItems: 'center' }}>
-      <Txt size={20} weight="800">
+      <Txt size={20} weight="600">
         {value}
       </Txt>
       <Txt dim size={12}>

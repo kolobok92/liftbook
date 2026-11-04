@@ -82,7 +82,7 @@ export default function ProgramBuilder() {
           title: existing ? 'Edit Program' : 'New Program',
           headerRight: () => (
             <Pressable style={{ paddingHorizontal: 12 }} testID="save-program" onPress={save} hitSlop={8}>
-              <Txt weight="700" color={C.accentText}>
+              <Txt weight="600" color={C.accentText}>
                 Save
               </Txt>
             </Pressable>
@@ -126,7 +126,7 @@ export default function ProgramBuilder() {
             <Pressable accessibilityLabel="Fewer weeks" onPress={() => setDraft((p) => setNumWeeks(p, p.numWeeks - 1))} style={stepBtn}>
               <Ionicons name="remove" size={18} color={C.text} />
             </Pressable>
-            <Txt testID="num-weeks" size={18} weight="700" style={{ minWidth: 28, textAlign: 'center' }}>
+            <Txt testID="num-weeks" size={18} weight="600" style={{ minWidth: 28, textAlign: 'center' }}>
               {draft.numWeeks}
             </Txt>
             <Pressable accessibilityLabel="More weeks" onPress={() => setDraft((p) => setNumWeeks(p, p.numWeeks + 1))} style={stepBtn}>
@@ -140,7 +140,7 @@ export default function ProgramBuilder() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
               {draft.weeks.map((w, i) => (
                 <Pressable key={w.id} onPress={() => setWeek(i)} style={{ paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999, backgroundColor: i === week ? C.accent : C.surface2 }}>
-                  <Txt size={13} weight="700" color={i === week ? C.onAccent : C.textDim}>
+                  <Txt size={13} weight="600" color={i === week ? C.onAccent : C.textDim}>
                     Week {i + 1}
                   </Txt>
                 </Pressable>
@@ -178,7 +178,7 @@ export default function ProgramBuilder() {
                   testID={`day-name-${di}`}
                   value={d.name}
                   onChangeText={(name) => setDraft((p) => forAllWeeks(p, (w) => ({ ...w, days: w.days.map((x, i) => (i === di ? { ...x, name } : x)) })))}
-                  style={{ flex: 1, color: C.text, fontSize: 18, fontWeight: '700', padding: 0 }}
+                  style={{ flex: 1, color: C.text, fontSize: 18, fontWeight: '600', padding: 0 }}
                   accessibilityLabel={`Day ${di + 1} name`}
                 />
                 <Pressable testID={`day-menu-${di}`} accessibilityLabel="Day options" hitSlop={8} onPress={() => setDayMenu(di)}>
@@ -196,7 +196,7 @@ export default function ProgramBuilder() {
                   onMenu={() => setExMenu({ day: di, ex: ei })}
                 />
               ))}
-              <Button testID={`builder-add-exercise-${di}`} small variant="secondary" icon="add" title="Add Exercises" onPress={() => addExercises(di)} />
+              <Button testID={`builder-add-exercise-${di}`} small variant="secondary" icon="add" title="Add exercises" onPress={() => addExercises(di)} />
             </Card>
           );
         })}
@@ -205,11 +205,11 @@ export default function ProgramBuilder() {
             testID="builder-add-day"
             variant="ghost"
             icon="add-circle-outline"
-            title="Add Day"
+            title="Add day"
             onPress={() => setDraft((p) => forAllWeeks(p, (w) => ({ ...w, days: [...w.days, { id: uid(), name: `Day ${w.days.length + 1}`, exercises: [] }] })))}
           />
         )}
-        <Button testID="save-program-bottom" title="Save Program" onPress={save} />
+        <Button testID="save-program-bottom" title="Save program" onPress={save} />
       </Screen>
 
       <SetTargetSheet

@@ -45,7 +45,7 @@ export default function ProgramDetail() {
           title: '',
           headerRight: () => (
             <Pressable style={{ paddingHorizontal: 12 }} testID="program-menu" onPress={() => setMenu(true)} hitSlop={8}>
-              <Txt color={C.accentText} weight="700">
+              <Txt color={C.accentText} weight="600">
                 •••
               </Txt>
             </Pressable>
@@ -54,7 +54,7 @@ export default function ProgramDetail() {
       />
       <Screen header>
         <View style={{ gap: 4 }}>
-          <Txt size={26} weight="800">
+          <Txt size={26} weight="600">
             {program.name}
           </Txt>
           {program.description ? <Txt dim>{program.description}</Txt> : null}
@@ -67,17 +67,17 @@ export default function ProgramDetail() {
 
         <View style={{ flexDirection: 'row', gap: 10 }}>
           {isActive ? (
-            <Button style={{ flex: 1 }} variant="secondary" title="Active Program" icon="checkmark-circle" onPress={() => goHome()} />
+            <Button style={{ flex: 1 }} variant="secondary" title="Active program" icon="checkmark-circle" onPress={() => goHome()} />
           ) : (
-            <Button testID="start-program" style={{ flex: 1 }} title="Start Program" icon="play" onPress={activate} />
+            <Button testID="start-program" style={{ flex: 1 }} title="Start program" icon="play" onPress={activate} />
           )}
           <Button testID="edit-program" style={{ flex: 1 }} variant="secondary" title="Edit" icon="create-outline" onPress={() => router.push(`/program/edit/${program.id}`)} />
         </View>
-        {hasPct && <Button variant="ghost" title="Set Rep Maxes for % sets" icon="barbell-outline" onPress={() => router.push({ pathname: '/program/rep-maxes', params: { id: program.id } })} />}
+        {hasPct && <Button variant="ghost" title="Set Rep maxes for % sets" icon="barbell-outline" onPress={() => router.push({ pathname: '/program/rep-maxes', params: { id: program.id } })} />}
 
         {share.length > 0 && (
           <>
-            <SectionTitle>Muscle Engagement</SectionTitle>
+            <SectionTitle>Muscle engagement</SectionTitle>
             <Card>
               <MuscleMap values={Object.fromEntries(share.map((s) => [s.muscle, s.pct]))} />
               <MuscleBars rows={(showAllMuscles ? share : share.slice(0, 6)).map((s) => ({ muscle: s.muscle, value: s.pct }))} format={(v) => `${fmtNum(Math.round(v * 10) / 10)}%`} />
@@ -86,12 +86,12 @@ export default function ProgramDetail() {
           </>
         )}
 
-        <SectionTitle>{program.mode === 'periodized' ? 'Workouts' : program.mode === 'loop' ? 'Days' : 'Weekly Workouts'}</SectionTitle>
+        <SectionTitle>{program.mode === 'periodized' ? 'Workouts' : program.mode === 'loop' ? 'Days' : 'Weekly workouts'}</SectionTitle>
         {program.mode === 'periodized' && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
             {program.weeks.map((w, i) => (
               <Pressable key={w.id} onPress={() => setWeek(i)} style={{ paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999, backgroundColor: i === week ? C.accent : C.surface2 }}>
-                <Txt size={13} weight="700" color={i === week ? C.onAccent : C.textDim}>
+                <Txt size={13} weight="600" color={i === week ? C.onAccent : C.textDim}>
                   W{i + 1}
                   {w.phase ? ` · ${w.phase}` : ''}
                 </Txt>
@@ -101,7 +101,7 @@ export default function ProgramDetail() {
         )}
         {weekData?.days.map((d, i) => (
           <Card key={d.id}>
-            <Txt size={16} weight="700">
+            <Txt size={16} weight="600">
               Day {i + 1} · {d.name}
             </Txt>
             <DayPreview day={d} />
@@ -151,7 +151,7 @@ export default function ProgramDetail() {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <View style={{ alignItems: 'center' }}>
-      <Txt size={17} weight="800">
+      <Txt size={17} weight="600">
         {value}
       </Txt>
       <Txt dim size={12}>

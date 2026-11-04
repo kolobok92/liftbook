@@ -42,7 +42,7 @@ export default function RootLayout() {
             screenOptions={{
               headerStyle: { backgroundColor: C.bg },
               headerTintColor: C.text,
-              headerTitleStyle: { fontWeight: '700' },
+              headerTitleStyle: { fontWeight: '600' },
               contentStyle: { backgroundColor: C.bg },
               headerShadowVisible: false,
               headerBackButtonDisplayMode: 'minimal',
@@ -51,10 +51,10 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="workout" options={{ presentation: 'fullScreenModal', headerShown: false, gestureEnabled: false }} />
             <Stack.Screen name="workout-summary" options={{ presentation: 'modal', headerShown: false }} />
-            <Stack.Screen name="exercise-picker" options={{ presentation: 'modal', title: 'Add Exercises' }} />
+            <Stack.Screen name="exercise-picker" options={{ presentation: 'modal', title: 'Add exercises' }} />
             <Stack.Screen name="program/[id]" options={{ title: '' }} />
             <Stack.Screen name="program/edit/[id]" options={{ title: 'Program Builder' }} />
-            <Stack.Screen name="program/rep-maxes" options={{ title: 'Rep Maxes' }} />
+            <Stack.Screen name="program/rep-maxes" options={{ title: 'Rep maxes' }} />
             <Stack.Screen name="exercise/[id]" options={{ title: '' }} />
             <Stack.Screen name="exercise/new" options={{ presentation: 'modal', title: 'Custom Exercise' }} />
             <Stack.Screen name="exercises" options={{ title: 'Exercises' }} />

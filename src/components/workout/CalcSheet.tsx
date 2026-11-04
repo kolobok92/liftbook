@@ -70,7 +70,7 @@ export function CalcSheet({ visible, onClose }: { visible: boolean; onClose: () 
                 })}
                 <View style={{ flex: 1, height: 10, backgroundColor: '#9A9A9A', borderRadius: 2 }} />
               </View>
-              <Txt testID="plate-result" size={18} weight="700">
+              <Txt testID="plate-result" size={18} weight="600">
                 {plates.perSide.length ? plates.perSide.map(fmtNum).join(' + ') : 'Empty bar'}
               </Txt>
               {plates.remainder > 0 && (
@@ -94,7 +94,7 @@ export function CalcSheet({ visible, onClose }: { visible: boolean; onClose: () 
           </View>
           {oneRm > 0 && (
             <View style={{ gap: 8, backgroundColor: C.surface2, borderRadius: R.md, padding: 14 }}>
-              <Txt testID="orm-result" size={18} weight="700">
+              <Txt testID="orm-result" size={18} weight="600">
                 Your one rep max is {fmtNum(Math.round(oneRm * 10) / 10)} {unit}
               </Txt>
               {[2, 3, 5, 8, 10, 12].map((r) => (

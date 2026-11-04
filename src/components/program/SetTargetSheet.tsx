@@ -108,7 +108,7 @@ export function SetTargetSheet({
   const error = typeof result === 'string' ? result : undefined;
 
   return (
-    <Sheet visible={visible} onClose={onClose} title="Set Target">
+    <Sheet visible={visible} onClose={onClose} title="Set target">
       <Txt dim size={13} weight="600">
         Target
       </Txt>
@@ -155,7 +155,7 @@ export function SetTargetSheet({
       )}
       {ik === 'pct' && (
         <Txt faint size={12}>
-          Weight is calculated from the 1RM you enter under Rep Maxes, or your best estimated 1RM if you haven’t entered one.
+          Weight is calculated from the 1RM you enter under Rep maxes, or your best estimated 1RM if you haven’t entered one.
         </Txt>
       )}
       {error && (
@@ -164,8 +164,8 @@ export function SetTargetSheet({
         </Txt>
       )}
       <View style={{ flexDirection: 'row', gap: 10 }}>
-        <Button style={{ flex: 1 }} variant="secondary" title="This Set" disabled={!!error} onPress={() => typeof result !== 'string' && onSave(result, false)} />
-        <Button testID="target-apply-all" style={{ flex: 1 }} title="All Sets" disabled={!!error} onPress={() => typeof result !== 'string' && onSave(result, true)} />
+        <Button style={{ flex: 1 }} variant="secondary" title="This set" disabled={!!error} onPress={() => typeof result !== 'string' && onSave(result, false)} />
+        <Button testID="target-apply-all" style={{ flex: 1 }} title="All sets" disabled={!!error} onPress={() => typeof result !== 'string' && onSave(result, true)} />
       </View>
     </Sheet>
   );

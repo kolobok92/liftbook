@@ -46,7 +46,7 @@ export function Txt({
 
 export function H1({ children, style }: { children: ReactNode; style?: StyleProp<TextStyle> }) {
   return (
-    <Txt size={26} weight="800" style={style}>
+    <Txt size={26} weight="600" style={style}>
       {children}
     </Txt>
   );
@@ -55,7 +55,7 @@ export function H1({ children, style }: { children: ReactNode; style?: StyleProp
 export function SectionTitle({ children, right }: { children: ReactNode; right?: ReactNode }) {
   return (
     <View style={styles.sectionTitle}>
-      <Txt size={13} weight="700" dim style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}>
+      <Txt size={14} weight="500" dim>
         {children}
       </Txt>
       {right}
@@ -115,7 +115,7 @@ export function Button({
       ]}
     >
       {icon && <Ionicons name={icon} size={small ? 15 : 18} color={fg} />}
-      <Txt size={small ? 13 : 15} weight="700" color={fg}>
+      <Txt size={small ? 13 : 15} weight="600" color={fg}>
         {title}
       </Txt>
     </Pressable>
@@ -274,7 +274,7 @@ export function Empty({ icon, title, body, children }: { icon: IconName; title: 
   return (
     <View style={{ alignItems: 'center', paddingVertical: 40, paddingHorizontal: 24, gap: 10 }}>
       <Ionicons name={icon} size={40} color={C.textFaint} />
-      <Txt size={17} weight="700">
+      <Txt size={17} weight="600">
         {title}
       </Txt>
       {body && (
@@ -361,7 +361,7 @@ export function Sheet({
                 <View style={styles.grabber} />
                 {title ? (
                   <View style={styles.sheetHeader}>
-                    <Txt size={18} weight="700" style={{ flex: 1 }} numberOfLines={1}>
+                    <Txt size={18} weight="600" style={{ flex: 1 }} numberOfLines={1}>
                       {title}
                     </Txt>
                     <IconBtn name="close" label="Close" onPress={onClose} />

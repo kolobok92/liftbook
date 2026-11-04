@@ -27,7 +27,7 @@ export function SwipeDeleteAction({
     <Animated.View style={shown}>
       <Pressable testID={testID} accessibilityLabel={label} onPress={onPress} style={[{ flex: 1 }, style]}>
         <Ionicons name="trash-outline" size={iconSize} color="#FFFFFF" />
-        <Txt size={12} weight="700" color="#FFFFFF">
+        <Txt size={12} weight="600" color="#FFFFFF">
           Delete
         </Txt>
       </Pressable>

@@ -13,7 +13,7 @@ export function HowTo({ exerciseId }: { exerciseId: string }) {
   const steps = allSteps ? d.instructions : d.instructions.slice(0, 3);
   return (
     <Card testID="how-to">
-      <Txt weight="700">How to</Txt>
+      <Txt weight="600">How to</Txt>
       {d.images.length > 0 && (
         <View style={{ flexDirection: 'row', gap: 8 }}>
           {d.images.slice(0, 2).map((p) => (
@@ -32,7 +32,7 @@ export function HowTo({ exerciseId }: { exerciseId: string }) {
       )}
       {steps.map((s, i) => (
         <View key={i} style={{ flexDirection: 'row', gap: 10 }}>
-          <Txt dim weight="700" style={{ width: 18, lineHeight: 20 }}>
+          <Txt dim weight="600" style={{ width: 18, lineHeight: 20 }}>
             {i + 1}.
           </Txt>
           <Txt size={14} style={{ flex: 1, lineHeight: 20 }}>

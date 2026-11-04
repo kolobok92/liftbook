@@ -33,8 +33,8 @@ test.describe('programs', () => {
     await tid(page, 'save-program-bottom').click();
     await tid(page, 'start-program').click(); // confirms switching away from PPLUA
 
-    await expect(page.getByText('CURRENT PROGRAM').locator('xpath=..')).toContainText('Upper Lower');
-    await expect(page.getByText('UP NEXT · CYCLE 1 · DAY 1')).toBeVisible();
+    await expect(page.getByText('Current program').locator('xpath=..')).toContainText('Upper Lower');
+    await expect(page.getByText('Up next · Cycle 1 · Day 1')).toBeVisible();
     await tid(page, 'start-next-workout').click();
     await expect(tid(page, 'exercise-card-0')).toContainText('Bench Press (Barbell)');
     await expect(tid(page, 'set-row-0-0')).toContainText('5 reps');
@@ -78,11 +78,11 @@ test.describe('programs', () => {
       history: done,
       activeProgram: { programId: 'pplua', startedAt: 0, completed: Object.fromEntries(done.map((w, d) => [`0-${d}`, w.id])) },
     });
-    await expect(page.getByText('UP NEXT · CYCLE 1 · DAY 5')).toBeVisible();
+    await expect(page.getByText('Up next · Cycle 1 · Day 5')).toBeVisible();
     await tid(page, 'toggle-full-plan').click();
     await tid(page, 'program-day-0-4').click();
-    await page.getByText('Skip This Workout').click();
-    await expect(page.getByText('UP NEXT · CYCLE 2 · DAY 1')).toBeVisible();
+    await page.getByText('Skip this workout').click();
+    await expect(page.getByText('Up next · Cycle 2 · Day 1')).toBeVisible();
   });
 });
 

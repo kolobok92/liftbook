@@ -213,7 +213,7 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
 
   const header = (
     <View style={styles.head}>
-      <Pressable style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }} onPress={() => router.push(`/exercise/${we.exerciseId}`)}>
+      <Pressable style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }} onPress={() => router.push(`/exercise/${we.exerciseId}?tab=history`)}>
         {p.mode === 'live' && allDone ? (
           <Ionicons testID={`done-mark-${p.index}`} name="checkmark" size={18} color={C.textDim} />
         ) : (
@@ -221,7 +221,7 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
             {p.index + 1}
           </Txt>
         )}
-        <Txt size={17} weight="700" numberOfLines={1} style={{ flexShrink: 1 }}>
+        <Txt size={17} weight="600" numberOfLines={1} style={{ flexShrink: 1 }}>
           {name}
         </Txt>
       </Pressable>
@@ -322,7 +322,7 @@ export const ExerciseCard = memo(function ExerciseCard(p: ExerciseCardProps) {
                   <Txt>{labels[i]}</Txt>
                 ) : (
                   <View style={[styles.typeBadge, { backgroundColor: SET_TYPE_COLOR[s.type] + '33' }]}>
-                    <Txt size={12} weight="800" color={SET_TYPE_COLOR[s.type]}>
+                    <Txt size={12} weight="600" color={SET_TYPE_COLOR[s.type]}>
                       {labels[i]}
                     </Txt>
                   </View>

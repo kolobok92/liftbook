@@ -54,7 +54,7 @@ export default function ExercisePicker() {
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <Stack.Screen
         options={{
-          title: multi ? 'Add Exercises' : 'Replace Exercise',
+          title: multi ? 'Add exercises' : 'Replace Exercise',
           headerLeft: () => (
             <Pressable style={{ paddingHorizontal: 12 }} onPress={() => done([])} hitSlop={8}>
               <Txt color={C.accentText}>Cancel</Txt>
@@ -90,12 +90,12 @@ export default function ExercisePicker() {
           return (
             <>
               {showRecentHeader && (
-                <Txt dim size={12} weight="700" style={{ marginVertical: 6 }}>
+                <Txt dim size={12} weight="600" style={{ marginVertical: 6 }}>
                   RECENT
                 </Txt>
               )}
               {showAllHeader && (
-                <Txt dim size={12} weight="700" style={{ marginVertical: 6 }}>
+                <Txt dim size={12} weight="600" style={{ marginVertical: 6 }}>
                   ALL EXERCISES
                 </Txt>
               )}
@@ -105,7 +105,7 @@ export default function ExercisePicker() {
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: C.border }}
               >
                 <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: on ? C.accent : C.surface2, alignItems: 'center', justifyContent: 'center' }}>
-                  {on ? <Ionicons name="checkmark" size={20} color={C.onAccent} /> : <Txt weight="800">{item.name[0]}</Txt>}
+                  {on ? <Ionicons name="checkmark" size={20} color={C.onAccent} /> : <Txt weight="600">{item.name[0]}</Txt>}
                 </View>
                 <View style={{ flex: 1 }}>
                   <Txt weight="600">{item.name}</Txt>

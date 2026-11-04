@@ -79,12 +79,12 @@ export default function WorkoutScreen() {
         <View style={{ flex: 1 }} />
         <Pressable testID="pause-workout" accessibilityLabel={active.pausedAt ? 'Resume timer' : 'Pause timer'} onPress={() => useStore.getState().togglePause()} style={styles.timer}>
           <Ionicons name={active.pausedAt ? 'play' : 'pause'} size={14} color={C.text} />
-          <Txt testID="workout-elapsed" weight="700" style={{ fontVariant: ['tabular-nums'] }}>
+          <Txt testID="workout-elapsed" weight="600" style={{ fontVariant: ['tabular-nums'] }}>
             {fmtDuration(workoutDurationMs(active, now))}
           </Txt>
         </Pressable>
         <Pressable testID="finish-workout" accessibilityRole="button" onPress={finish} style={styles.finish}>
-          <Txt weight="800" color={C.onAccent}>
+          <Txt weight="600" color={C.onAccent}>
             Finish
           </Txt>
         </Pressable>
@@ -106,7 +106,7 @@ export default function WorkoutScreen() {
               testID="workout-name"
               value={active.name}
               onChangeText={(t) => updateActive((w) => ({ ...w, name: t }))}
-              style={{ color: C.text, fontSize: 24, fontWeight: '800', padding: 0 }}
+              style={{ color: C.text, fontSize: 24, fontWeight: '600', padding: 0 }}
               accessibilityLabel="Workout name"
             />
             {active.programRef && (
@@ -123,7 +123,7 @@ export default function WorkoutScreen() {
 
           <WorkoutEditor workout={active} update={updateActive} mode="live" />
 
-          <Button testID="discard-workout" title="Discard Workout" variant="danger" onPress={discard} />
+          <Button testID="discard-workout" title="Discard workout" variant="danger" onPress={discard} />
           <KeypadSpacer />
       </ScrollView>
       <Keypad scrollRef={scrollRef} scrollY={scrollY} />

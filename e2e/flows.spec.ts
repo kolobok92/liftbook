@@ -112,8 +112,8 @@ test.describe('flows @flows', () => {
     await tid(page, 'add-set-0').click();
     await s.shot('Added a set');
     await tid(page, 'minimize-workout').click();
-    await s.shot('Minimized: resume bar');
-    await tid(page, 'active-workout-bar').click();
+    await s.shot('Minimized: resume card');
+    await tid(page, 'resume-workout').click();
     await tid(page, 'check-0-0').click();
     await tid(page, 'finish-workout').click();
     await s.shot('Finish: offer to update program');

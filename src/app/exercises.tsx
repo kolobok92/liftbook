@@ -47,7 +47,7 @@ export default function Exercises() {
         options={{
           headerRight: () => (
             <Pressable style={{ paddingHorizontal: 12 }} onPress={() => router.push('/exercise/new')} hitSlop={8}>
-              <Txt color={C.accentText} weight="700">
+              <Txt color={C.accentText} weight="600">
                 New
               </Txt>
             </Pressable>

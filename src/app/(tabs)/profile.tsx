@@ -142,7 +142,7 @@ export default function Profile() {
         </Row>
       </Card>
 
-      <SectionTitle>Plates & Rounding</SectionTitle>
+      <SectionTitle>Plates & rounding</SectionTitle>
       <Card>
         <Row label="Bar weight">
           <View style={{ width: 80 }}>
@@ -162,7 +162,7 @@ export default function Profile() {
       <SectionTitle>Library</SectionTitle>
       <Card style={{ paddingVertical: 4 }}>
         <MenuItem icon="barbell-outline" label="Exercises" onPress={() => router.push('/exercises')} />
-        <MenuItem icon="trophy-outline" label="Rep Maxes" onPress={() => router.push('/program/rep-maxes')} />
+        <MenuItem icon="trophy-outline" label="Rep maxes" onPress={() => router.push('/program/rep-maxes')} />
       </Card>
 
       <SectionTitle>Data</SectionTitle>

@@ -40,7 +40,7 @@ export function ProgramChangesCard({ pending }: { pending: PendingProgramChange 
 
   return (
     <Card testID="program-changes">
-      <Txt weight="800">Update your program?</Txt>
+      <Txt weight="600">Update your program?</Txt>
       <Txt dim size={13}>
         You changed this workout. Choose which changes to keep for next time.
       </Txt>

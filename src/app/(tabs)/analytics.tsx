@@ -56,7 +56,7 @@ export default function Analytics() {
       </View>
 
       <Card>
-        <Txt weight="700">
+        <Txt weight="600">
           <Ionicons name="time-outline" size={15} color={C.text} /> Lifetime
         </Txt>
         <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
@@ -66,7 +66,7 @@ export default function Analytics() {
         </View>
         <View style={{ backgroundColor: C.surface2, borderRadius: 8, paddingVertical: 6, alignItems: 'center' }}>
           <Txt size={13}>
-            <Txt color={C.orange} weight="800">
+            <Txt color={C.orange} weight="600">
               {streak}
             </Txt>{' '}
             week streak
@@ -79,7 +79,7 @@ export default function Analytics() {
           <Pressable accessibilityLabel="Previous week" onPress={() => setWeekOffset((o) => o + 1)} hitSlop={8}>
             <Ionicons name="chevron-back" size={18} color={C.text} />
           </Pressable>
-          <Txt weight="700" style={{ flex: 1, textAlign: 'center' }}>
+          <Txt weight="600" style={{ flex: 1, textAlign: 'center' }}>
             {weekLabel}
           </Txt>
           <Pressable accessibilityLabel="Next week" disabled={weekOffset === 0} onPress={() => setWeekOffset((o) => Math.max(0, o - 1))} hitSlop={8}>
@@ -96,18 +96,19 @@ export default function Analytics() {
         </Txt>
         {weekPRs.length > 0 && (
           <View style={{ gap: 6, marginTop: 4 }}>
-            <Txt weight="700" size={13}>
-              New Personal Records
+            <Txt weight="600" size={13}>
+              New personal records
             </Txt>
             {weekPRs.map((p, i) => (
               <Pressable key={i} onPress={() => router.push(`/exercise/${p.exerciseId}`)} style={{ flexDirection: 'row', gap: 8 }}>
+                <Ionicons name="trophy-outline" size={14} color={C.orange} />
                 <Txt size={13} style={{ flex: 1 }} numberOfLines={1}>
-                  🏆 {exerciseName(byId, p.exerciseId)}
+                  {exerciseName(byId, p.exerciseId)}
                 </Txt>
                 <Txt size={13} dim>
                   {PR_LABEL[p.kind]}
                 </Txt>
-                <Txt size={13} weight="700">
+                <Txt size={13} weight="600">
                   {fmtPR(p, unit)}
                 </Txt>
               </Pressable>
@@ -127,7 +128,7 @@ export default function Analytics() {
 
       {tab === 'muscles' ? (
         <Card>
-          <Txt weight="700">Sets per muscle · {weekLabel.toLowerCase()}</Txt>
+          <Txt weight="600">Sets per muscle · {weekLabel.toLowerCase()}</Txt>
           <Txt faint size={12}>
             Primary muscles count a full set, secondary muscles half. 10–20 sets per week is a common hypertrophy range.
           </Txt>
@@ -150,7 +151,7 @@ export default function Analytics() {
               value={bucket}
               onChange={setBucket}
             />
-            <Txt weight="700">Total Training Volume ({unit})</Txt>
+            <Txt weight="600">Total Training Volume ({unit})</Txt>
             <VolumeBars
               points={series}
               labelFmt={(t) =>
@@ -168,7 +169,7 @@ export default function Analytics() {
 function Big({ value, label, suffix, change, plain }: { value: string; label: string; suffix?: string; change?: number | null; plain?: boolean }) {
   return (
     <View style={{ alignItems: 'center', minWidth: 80 }}>
-      <Txt size={26} weight="800" color={plain ? C.text : C.orange}>
+      <Txt size={26} weight="600" color={plain ? C.text : C.orange}>
         {value}
         {suffix ? <Txt size={12} dim>{` ${suffix}`}</Txt> : null}
       </Txt>
@@ -176,7 +177,7 @@ function Big({ value, label, suffix, change, plain }: { value: string; label: st
         {label}
       </Txt>
       {change != null && (
-        <Txt size={11} weight="700" color={change >= 0 ? C.green : C.red}>
+        <Txt size={11} weight="600" color={change >= 0 ? C.green : C.red}>
           {change >= 0 ? '▲' : '▼'} {Math.abs(change)}%
         </Txt>
       )}

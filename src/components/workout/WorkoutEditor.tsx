@@ -63,7 +63,7 @@ function SupersetCard({
   const active = run.some(({ e }) => e.id === upNextRow || e.id === editingRow);
   return (
     <View testID={`superset-box-${run[0].idx}`} style={[supersetStyles.box, active && supersetStyles.boxActive]}>
-      <Txt size={11} weight="800" color={C.accentText} style={{ letterSpacing: 0.6, paddingHorizontal: 6 }}>
+      <Txt size={11} weight="600" color={C.accentText} style={{ paddingHorizontal: 6 }}>
         {label}
       </Txt>
       <View style={supersetStyles.tabs} accessibilityRole="tablist">
@@ -82,11 +82,11 @@ function SupersetCard({
               style={[supersetStyles.tab, on && supersetStyles.tabOn, on && active && { borderColor: C.orange }]}
             >
               <View style={[supersetStyles.letter, { backgroundColor: tint + '33' }]}>
-                <Txt size={12} weight="800" color={tint}>
+                <Txt size={12} weight="600" color={tint}>
                   {String.fromCharCode(65 + k)}
                 </Txt>
               </View>
-              <Txt size={13} weight="700" numberOfLines={1} color={on ? C.text : C.textDim} style={{ flex: 1 }}>
+              <Txt size={13} weight="600" numberOfLines={1} color={on ? C.text : C.textDim} style={{ flex: 1 }}>
                 {names[k]}
               </Txt>
               <Txt size={12} color={on ? C.textDim : C.textFaint}>
@@ -251,7 +251,7 @@ export function WorkoutEditor({ workout, update, mode }: { workout: Workout; upd
           ),
         )}
         <View style={{ flexDirection: 'row', gap: 10 }}>
-          <Button testID="add-exercise" style={{ flex: 1 }} title="Add Exercise" icon="add" variant="secondary" onPress={addExercises} />
+          <Button testID="add-exercise" style={{ flex: 1 }} title="Add exercise" icon="add" variant="secondary" onPress={addExercises} />
           {workout.exercises.length > 1 && (
             <Button testID="open-reorder" title="Reorder" icon="reorder-three-outline" variant="secondary" onPress={() => setReorder(true)} />
           )}
@@ -284,7 +284,7 @@ export function WorkoutEditor({ workout, update, mode }: { workout: Workout; upd
             afterMenu.current?.();
             afterMenu.current = null;
           }}
-          title="Exercise Options"
+          title="Exercise options"
         >
           {/* Only while an exercise is selected: during the close animation the items are still
         tappable, and a second tap used to act on an exercise that was no longer selected. */}

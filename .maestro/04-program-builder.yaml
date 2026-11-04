@@ -92,7 +92,7 @@ appId: ${APP_ID}
     visible: "Today"
     timeout: 10000
 - assertVisible: 'Upper Lower'
-- assertVisible: 'UP NEXT · CYCLE 1 · DAY 1'
+- assertVisible: 'Up next · Cycle 1 · Day 1'
 - tapOn:
     id: "start-next-workout"
 - assertVisible: '1, Bench Press \(Barbell\)'
