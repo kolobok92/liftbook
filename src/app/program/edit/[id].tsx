@@ -16,6 +16,7 @@ import {
   move,
   setMode,
   setNumWeeks,
+  setSuperset,
   updateDay,
   updateWeek,
   validateProgram,
@@ -239,7 +240,8 @@ export default function ProgramBuilder() {
             icon="git-merge-outline"
             label="Remove from superset"
             onPress={() => {
-              updateEx(exMenu!, (e) => ({ ...e, superset: undefined }));
+              const r = exMenu!;
+              setDraft((p) => setSuperset(p, wi, r.day, r.ex, false));
               setExMenu(null);
             }}
           />
@@ -250,10 +252,7 @@ export default function ProgramBuilder() {
             label="Superset with next"
             onPress={() => {
               const r = exMenu!;
-              const group = menuNext.superset ?? uid();
-              setDraft((p) =>
-                updateDay(p, wi, r.day, (d) => ({ ...d, exercises: d.exercises.map((e, i) => (i === r.ex || i === r.ex + 1 ? { ...e, superset: group } : e)) })),
-              );
+              setDraft((p) => setSuperset(p, wi, r.day, r.ex, true));
               setExMenu(null);
             }}
           />
