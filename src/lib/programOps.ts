@@ -65,6 +65,29 @@ export function forAllWeeks(p: Program, fn: (w: ProgramWeek) => ProgramWeek): Pr
   return { ...p, weeks: p.weeks.map(fn) };
 }
 
+/**
+ * Pair exercise `ex` of day `di` with the one after it (`pair`), or take it out of its superset.
+ * Supersets are part of a day's shape, so in a periodized program the change also goes to every
+ * other week whose version of the day has the same exercises at those positions (weeks are
+ * copies of each other); otherwise only week `wi` (the template) changes.
+ */
+export function setSuperset(p: Program, wi: number, di: number, ex: number, pair: boolean): Program {
+  const ref = p.weeks[wi]?.days[di]?.exercises;
+  if (!ref?.[ex] || (pair && !ref[ex + 1])) return p;
+  const same = (d: ProgramDay) => d.exercises[ex]?.exerciseId === ref[ex].exerciseId && (!pair || d.exercises[ex + 1]?.exerciseId === ref[ex + 1].exerciseId);
+  const apply = (d: ProgramDay): ProgramDay => {
+    if (!pair) return { ...d, exercises: d.exercises.map((e, i) => (i === ex ? { ...e, superset: undefined } : e)) };
+    const group = d.exercises[ex + 1].superset ?? uid();
+    return { ...d, exercises: d.exercises.map((e, i) => (i === ex || i === ex + 1 ? { ...e, superset: group } : e)) };
+  };
+  return {
+    ...p,
+    weeks: p.weeks.map((w, i) =>
+      i === wi || (p.mode === 'periodized' && w.days[di] && same(w.days[di])) ? { ...w, days: w.days.map((d, j) => (j === di ? apply(d) : d)) } : w,
+    ),
+  };
+}
+
 export function move<T>(arr: T[], from: number, to: number): T[] {
   if (to < 0 || to >= arr.length) return arr;
   const a = [...arr];
