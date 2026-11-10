@@ -201,8 +201,25 @@ export function workoutExerciseFromProgram(pe: ProgramExercise): WorkoutExercise
   };
 }
 
+/**
+ * Superset members moved next to each other (at the first member's place, in their order), so a
+ * group split by a reorder or a partly accepted program update still draws as one superset card.
+ */
+export function groupSupersets<T extends { superset?: string }>(rows: T[]): T[] {
+  const out: T[] = [];
+  const placed = new Set<T>();
+  for (const r of rows) {
+    if (placed.has(r)) continue;
+    for (const m of r.superset ? rows.filter((x) => x.superset === r.superset) : [r]) {
+      out.push(m);
+      placed.add(m);
+    }
+  }
+  return out;
+}
+
 export function newWorkout(name: string, unit: Unit, exercises: WorkoutExercise[] = [], programRef?: ProgramRef): Workout {
-  return { id: uid(), name, notes: '', startedAt: Date.now(), pausedMs: 0, exercises, unit, programRef };
+  return { id: uid(), name, notes: '', startedAt: Date.now(), pausedMs: 0, exercises: groupSupersets(exercises), unit, programRef };
 }
 
 /** Copy a past workout's exercises and set structure (not numbers) into a new session. */

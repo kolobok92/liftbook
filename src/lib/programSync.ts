@@ -1,5 +1,5 @@
 import { newSetTarget, uid } from './calc';
-import { programDayAt } from './tracking';
+import { groupSupersets, programDayAt } from './tracking';
 import type { Program, ProgramDay, ProgramExercise, SetTarget, Workout } from './types';
 
 /**
@@ -117,7 +117,8 @@ export function mergeAccepted(original: ProgramDay, updated: ProgramDay, accepte
   } else {
     order = [...original.exercises.map((pe) => pe.id), ...updated.exercises.filter((u) => !orig.has(u.id)).map((u) => u.id)];
   }
-  const exercises = order.map(pick).filter((x): x is ProgramExercise => !!x);
+  // A superset taken without the new order would leave its members apart: keep them together.
+  const exercises = groupSupersets(order.map(pick).filter((x): x is ProgramExercise => !!x));
   return { ...original, exercises };
 }
 

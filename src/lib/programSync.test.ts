@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { newSetTarget } from './calc';
 import { applyWorkoutToProgram, changeItems, dayFromWorkout } from './programSync';
-import { emptySet, newWorkout, workoutExerciseFromProgram } from './tracking';
+import { emptySet, newWorkout, programDayAt, workoutExerciseFromProgram } from './tracking';
+import { supersetWith } from './workoutOps';
 import type { Program, ProgramDay, Workout } from './types';
 
 const t = (min: number, max: number, pct?: number) =>
@@ -99,5 +100,25 @@ describe('program sync', () => {
     w.exercises[0].sets.push(emptySet());
     const next = applyWorkoutToProgram(p, w, 'week', new Set(['ex:bench1']));
     expect(next.weeks.map((wk) => wk.days[0].exercises[0].sets.length)).toEqual([3, 4, 3]);
+  });
+
+  it('a superset kept without the new order still puts its exercises together for next time', () => {
+    const p = program();
+    const w = workoutFor(p);
+    w.exercises = supersetWith(w.exercises, w.exercises[0].id, w.exercises[2].id, 'G'); // bench + dip, dip moves up
+    expect(items(p, w).map((i) => i.key)).toEqual(['order', 'superset']);
+    const next = applyWorkoutToProgram(p, w, 'template', new Set(['superset']));
+    expect(programDayAt(next, 1, 0)!.exercises.map((e) => [e.exerciseId, !!e.superset])).toEqual([
+      ['bench', true],
+      ['dip', true],
+      ['fly', false],
+    ]);
+  });
+
+  it('a program day whose superset was split apart still starts as one superset', () => {
+    const p = program();
+    const [bench, fly, dip] = p.weeks[0].days[0].exercises;
+    const w = newWorkout('Push', 'lb', [{ ...bench, superset: 'G' }, fly, { ...dip, superset: 'G' }].map(workoutExerciseFromProgram));
+    expect(w.exercises.map((e) => e.exerciseId)).toEqual(['bench', 'dip', 'fly']);
   });
 });
