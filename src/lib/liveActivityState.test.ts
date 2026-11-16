@@ -30,6 +30,14 @@ describe('workoutActivity', () => {
     expect(workoutActivity(w([['bench', [false]]], { pausedMs: 90_000 }), byId).startedAt).toBe(1_090_000);
   });
 
+  it('while resting shows the rest countdown and what comes after; back to the workout clock when it ends', () => {
+    const resting = w([['bench', [true, false, false]]], { rest: { endsAt: 1_500_000, seconds: 120 } });
+    expect(workoutActivity(resting, byId)).toEqual({ title: 'Bench Press (Barbell)', subtitle: 'Rest · then Set 2 of 3', restEndsAt: 1_500_000 });
+    expect(workoutActivity({ ...resting, rest: undefined }, byId)).toEqual({ title: 'Bench Press (Barbell)', subtitle: 'Set 2 of 3', startedAt: 1_000_000 });
+    // Only the view's "Rest" prefix marks a countdown: no other subtitle may start with it.
+    expect(workoutActivity(w([['bench', [true]]]), byId).subtitle.startsWith('Rest')).toBe(false);
+  });
+
   it('while paused shows progress instead of a clock that would keep running', () => {
     const a = workoutActivity(w([['bench', [true, false, false]], ['row', [true]]], { pausedAt: 2_000_000 }), byId);
     expect(a).toEqual({ title: 'Bench Press (Barbell)', subtitle: '2/4 sets done', progress: 0.5 });

@@ -28,7 +28,7 @@ function toNative(a: WorkoutActivity) {
   return {
     title: a.title,
     subtitle: a.subtitle,
-    progressBar: a.startedAt != null ? { date: a.startedAt } : { progress: a.progress ?? 0 },
+    progressBar: a.restEndsAt != null ? { date: a.restEndsAt } : a.startedAt != null ? { date: a.startedAt } : { progress: a.progress ?? 0 },
     imageName: a.image,
     dynamicIslandImageName: a.image,
   };

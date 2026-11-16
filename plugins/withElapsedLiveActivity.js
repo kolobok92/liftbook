@@ -1,7 +1,8 @@
 // Customizes expo-live-activity's widget after its plugin copies the sources into ios/LiveActivity:
 // - LiveActivityView.swift (lock screen) is replaced by ours, native/live-activity/ (Boostcamp-like).
 // - The Dynamic Island timers are patched to count *up* from `progressBar.date` (the workout's
-//   start) instead of down to it. Text(timerInterval:countsDown:) is iOS 16+, matching the
+//   start) instead of down to it; during a rest the date is the rest's end and they count
+//   down to it (the lock screen does the same, in our view). Text(timerInterval:countsDown:) is iOS 16+, matching the
 //   extension's 16.2 deployment target.
 // - Exercise thumbnails are added to the widget's asset catalog.
 //
@@ -16,6 +17,21 @@ const ELAPSED_HELPER = `
   static func elapsedInterval(miliseconds: Double) -> ClosedRange<Self> {
     min(now, Date(timeIntervalSince1970: miliseconds / 1000)) ... Date.distantFuture
   }
+
+  /// Countdown range for a rest ending at the date: now until then (empty once it has passed).
+  static func restInterval(miliseconds: Double) -> ClosedRange<Self> {
+    now ... max(now, Date(timeIntervalSince1970: miliseconds / 1000))
+  }
+
+  /// The Dynamic Island only gets the date: a future one is a rest's end (count down to it), a
+  /// past one the workout's start (count up from it).
+  static func isRestEnd(miliseconds: Double) -> Bool {
+    Date(timeIntervalSince1970: miliseconds / 1000) > now
+  }
+
+  static func clockInterval(miliseconds: Double) -> ClosedRange<Self> {
+    isRestEnd(miliseconds: miliseconds) ? restInterval(miliseconds: miliseconds) : elapsedInterval(miliseconds: miliseconds)
+  }
 `;
 
 const PATCHES = {
@@ -29,13 +45,13 @@ const PATCHES = {
     {
       // Dynamic Island compact/minimal (digital).
       find: 'Text(timerInterval: Date.toTimerInterval(miliseconds: endDate))',
-      replace: 'Text(timerInterval: Date.elapsedInterval(miliseconds: endDate), countsDown: false)\n        .monospacedDigit()',
+      replace: 'Text(timerInterval: Date.clockInterval(miliseconds: endDate), countsDown: Date.isRestEnd(miliseconds: endDate))\n        .monospacedDigit()',
     },
     {
       // Dynamic Island expanded: a big elapsed clock instead of a progress bar.
       find: 'ProgressView(timerInterval: Date.toTimerInterval(miliseconds: endDate))\n      .foregroundStyle(.white)',
       replace:
-        'Text(timerInterval: Date.elapsedInterval(miliseconds: endDate), countsDown: false)\n      .font(.system(.title, design: .rounded).monospacedDigit())\n      .fontWeight(.bold)\n      .foregroundStyle(.white)',
+        'Text(timerInterval: Date.clockInterval(miliseconds: endDate), countsDown: Date.isRestEnd(miliseconds: endDate))\n      .font(.system(.title, design: .rounded).monospacedDigit())\n      .fontWeight(.bold)\n      .foregroundStyle(.white)',
     },
   ],
 };

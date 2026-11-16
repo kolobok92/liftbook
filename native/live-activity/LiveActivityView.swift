@@ -34,6 +34,11 @@ import WidgetKit
       attributes.progressViewTint.map { Color(hex: $0) } ?? Color.yellow
     }
 
+    /// The app marks a rest by starting the subtitle with "Rest" (liveActivityState.ts); the date
+    /// is then the rest's end instead of the workout's start. Not inferred from the date being in
+    /// the future: this view can be redrawn after the rest has ended.
+    private var resting: Bool { contentState.subtitle?.hasPrefix("Rest") ?? false }
+
     var body: some View {
       VStack(alignment: .leading, spacing: 10) {
         HStack(spacing: 6) {
@@ -45,7 +50,16 @@ import WidgetKit
             .fontWeight(.semibold)
             .foregroundStyle(Color.white.opacity(0.85))
           Spacer()
-          if let start = contentState.timerEndDateInMilliseconds {
+          if let date = contentState.timerEndDateInMilliseconds, resting {
+            // Rest: counts down to the end of the rest and holds at 0:00 (the app can't update
+            // the activity from the background; opening it brings the workout clock back).
+            Text(timerInterval: Date.restInterval(miliseconds: date), countsDown: true)
+              .font(.subheadline.monospacedDigit())
+              .fontWeight(.semibold)
+              .foregroundStyle(accent)
+              .multilineTextAlignment(.trailing)
+              .frame(maxWidth: 96, alignment: .trailing)
+          } else if let start = contentState.timerEndDateInMilliseconds {
             // Counts up from the workout start (pauses excluded); iOS keeps it ticking.
             Text(timerInterval: Date.elapsedInterval(miliseconds: start), countsDown: false)
               .font(.subheadline.monospacedDigit())

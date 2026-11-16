@@ -18,12 +18,17 @@ describe('withElapsedLiveActivity', () => {
   applyPatches(dir);
   const read = (f: string) => readFileSync(join(dir, f), 'utf8');
 
-  it('installs our lock-screen view and keeps no countdowns', () => {
+  it('installs our lock-screen view; clocks count up, except a rest counting down', () => {
     expect(read('LiveActivityView.swift')).toContain('Text("LIFTBOOK")');
     // Every displayed clock counts up (the circular style, unused: timerType is digital, keeps its own).
     expect(read('LiveActivityView.swift')).not.toContain('Date.toTimerInterval(');
     expect(read('LiveActivityWidget.swift')).not.toContain('Text(timerInterval: Date.toTimerInterval(');
-    expect(read('LiveActivityWidget.swift').match(/elapsedInterval/g)).toHaveLength(2);
+    expect(read('LiveActivityWidget.swift').split('Text(timerInterval: Date.clockInterval(miliseconds: endDate), countsDown: Date.isRestEnd(miliseconds: endDate))')).toHaveLength(3);
+    for (const fn of ['restInterval', 'clockInterval']) expect(read('Date+toTimerInterval.swift')).toContain(`static func ${fn}(miliseconds: Double) -> ClosedRange<Self>`);
+    expect(read('Date+toTimerInterval.swift')).toContain('static func isRestEnd(miliseconds: Double) -> Bool');
+    // Lock screen: a rest counts down to its end, the workout clock counts up from the start.
+    expect(read('LiveActivityView.swift')).toContain('Text(timerInterval: Date.restInterval(miliseconds: date), countsDown: true)');
+    expect(read('LiveActivityView.swift')).toContain('Text(timerInterval: Date.elapsedInterval(miliseconds: start), countsDown: false)');
     expect(read('Date+toTimerInterval.swift')).toContain('static func elapsedInterval(miliseconds: Double) -> ClosedRange<Self>');
   });
 

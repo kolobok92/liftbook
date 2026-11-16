@@ -20,3 +20,29 @@ tags:
     visible:
       id: "resume-workout"
     timeout: 10000
+
+# Rest: checking a set starts the rest timer; the island and the lock screen count it down.
+- tapOn:
+    id: "resume-workout"
+- tapOn:
+    id: "weight-0-0"
+- tapOn:
+    id: "key-2"
+- tapOn:
+    id: "key-0"
+- tapOn:
+    id: "keypad-next"
+- tapOn:
+    id: "key-8"
+- tapOn:
+    id: "keypad-hide"
+- tapOn:
+    id: "check-0-0"
+- assertVisible:
+    id: "rest-bar"
+- pressKey: Home
+- waitForAnimationToEnd
+- takeScreenshot: 05-dynamic-island-rest
+- pressKey: Lock
+- waitForAnimationToEnd
+- takeScreenshot: 06-lock-screen-rest

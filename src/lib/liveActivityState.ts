@@ -8,6 +8,9 @@ export type WorkoutActivity = {
   subtitle: string;
   /** Running: the effective start (pauses excluded), shown as a count-up clock. */
   startedAt?: number;
+  /** Resting: when the rest ends, shown as a countdown instead of the workout clock. The
+   * subtitle then starts with "Rest", which is how the lock-screen view knows (LiveActivityView.swift). */
+  restEndsAt?: number;
   /** Paused: share of sets done, shown as a bar (the clock can't be frozen). */
   progress?: number;
   /** The current exercise's bundled thumbnail (asset name = exercise id), when it has one. */
@@ -28,6 +31,8 @@ export function workoutActivity(w: Workout, byId: Record<string, Exercise>, hasT
   const title = next?.name ?? w.name;
   const image = next && hasThumb(next.id) ? { image: next.id } : {};
   if (w.pausedAt) return { title, subtitle: `${sets} done`, progress: total ? done / total : 0, ...image };
+  const upNext = next ? `Set ${next.set} of ${next.of}` : '';
+  if (w.rest && next) return { title, subtitle: `Rest · then ${upNext}`, restEndsAt: w.rest.endsAt, ...image };
   return {
     title,
     subtitle: next ? `Set ${next.set} of ${next.of}${next.target ? ` (${next.target})` : ''}` : `All sets done · ${sets}`,
