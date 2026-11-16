@@ -15,11 +15,16 @@ tags:
     visible: "Today"
     timeout: 30000
 - openLink: liftbook://e2e-seed?scenario=bench-active
-# iOS asks before following a link into the app, sometimes a moment after the link is sent.
+# iOS asks before following a link into the app, and on a CI simulator the prompt can take many
+# seconds to show. Left unanswered it also covers the next flow, so wait for it.
 - runFlow:
     when:
       platform: iOS
     commands:
+      - extendedWaitUntil:
+          visible: "Open"
+          timeout: 45000
+          optional: true
       - tapOn:
           text: "Open"
           optional: true
