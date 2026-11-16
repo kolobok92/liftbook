@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NoteField } from '@/components/NoteField';
 import { CalcSheet } from '@/components/workout/CalcSheet';
 import { Keypad, KeypadSpacer } from '@/components/workout/Keypad';
+import { RestBar } from '@/components/workout/RestBar';
 import { WorkoutEditor } from '@/components/workout/WorkoutEditor';
 import { Button, Empty, Txt, confirm, haptic } from '@/components/ui';
 import { completedSetCount, fmtDuration, workoutDurationMs } from '@/lib/calc';
@@ -95,7 +96,7 @@ export default function WorkoutScreen() {
           system keyboard as well made the list jump on every set. */}
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={{ padding: 12, gap: 12, paddingBottom: 60 }}
+        contentContainerStyle={{ padding: 12, gap: 12, paddingBottom: 120 }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         scrollEventThrottle={16}
@@ -126,6 +127,7 @@ export default function WorkoutScreen() {
           <Button testID="discard-workout" title="Discard workout" variant="danger" onPress={discard} />
           <KeypadSpacer />
       </ScrollView>
+      <RestBar />
       <Keypad scrollRef={scrollRef} scrollY={scrollY} />
 
 

@@ -29,7 +29,7 @@ import type {
   Unit,
   Workout,
 } from './types';
-import { convertStoredWeight, convertWorkoutUnit, dedupeImported, finishWorkout, markSlotDone, resumeOnLoggedSet, trainingMax, unmarkWorkout } from './workoutOps';
+import { convertStoredWeight, convertWorkoutUnit, dedupeImported, finishWorkout, markSlotDone, restAfterLoggedSet, resumeOnLoggedSet, trainingMax, unmarkWorkout } from './workoutOps';
 
 export type FinishResult = { workout: Workout; prs: PR[]; pending?: PendingProgramChange };
 
@@ -41,6 +41,8 @@ type State = {
   customExercises: Exercise[];
   templates: Template[];
   oneRepMaxes: Record<string, number>;
+  /** Rest seconds per exercise, over settings.restSeconds (0 = no timer for it). */
+  restByExercise: Record<string, number>;
   settings: Settings;
   lastFinished?: FinishResult;
   seeded: boolean;
@@ -73,6 +75,8 @@ type Actions = {
   saveTemplate: (t: Template) => void;
   deleteTemplate: (id: string) => void;
   setOneRepMax: (exerciseId: string, value: number | null) => void;
+  /** null = back to the default rest time. */
+  setRestFor: (exerciseId: string, seconds: number | null) => void;
   updateSettings: (p: Partial<Settings>) => void;
   /** Switch units, converting every stored weight so numbers stay meaningful. */
   setUnit: (unit: Unit) => void;
@@ -90,6 +94,8 @@ export const DEFAULT_SETTINGS: Settings = {
   plateRounding: { lb: 5, kg: 2.5 },
   availablePlates: { lb: [45, 35, 25, 10, 5, 2.5], kg: [25, 20, 15, 10, 5, 2.5, 1.25] },
   haptics: true,
+  restTimer: true,
+  restSeconds: 120,
   appearance: 'system',
 };
 
@@ -101,6 +107,7 @@ const initial = (): State => ({
   customExercises: [],
   templates: [],
   oneRepMaxes: {},
+  restByExercise: {},
   settings: DEFAULT_SETTINGS,
   lastFinished: undefined,
   seeded: true,
@@ -158,7 +165,13 @@ export const useStore = create<State & Actions>()(
         startEmptyWorkout: () => begin(newWorkout('Workout', get().settings.unit)),
         startFromWorkout: (w) => begin(repeatWorkout(w, get().settings.unit)),
         startFromTemplate: (t) => begin(newWorkout(t.name, get().settings.unit, t.exercises.map(workoutExerciseFromProgram))),
-        updateActive: (fn) => set((st) => (st.active ? { active: resumeOnLoggedSet(st.active, fn(st.active), Date.now()) } : {})),
+        updateActive: (fn) =>
+          set((st) => {
+            if (!st.active) return {};
+            const now = Date.now();
+            const restFor = (id: string) => (st.settings.restTimer ? (st.restByExercise[id] ?? st.settings.restSeconds) : 0);
+            return { active: restAfterLoggedSet(st.active, resumeOnLoggedSet(st.active, fn(st.active), now), now, restFor) };
+          }),
         togglePause: () =>
           set((st) => {
             const w = st.active;
@@ -216,6 +229,13 @@ export const useStore = create<State & Actions>()(
             else next[id] = value;
             return { oneRepMaxes: next };
           }),
+        setRestFor: (id, seconds) =>
+          set((st) => {
+            const next = { ...st.restByExercise };
+            if (seconds == null) delete next[id];
+            else next[id] = seconds;
+            return { restByExercise: next };
+          }),
         updateSettings: (p) => set((st) => ({ settings: { ...st.settings, ...p } })),
 
         setUnit: (unit) =>
@@ -255,6 +275,7 @@ export const useStore = create<State & Actions>()(
         customExercises: s.customExercises,
         templates: s.templates,
         oneRepMaxes: s.oneRepMaxes,
+        restByExercise: s.restByExercise,
         settings: s.settings,
         seeded: s.seeded,
       }),

@@ -19,10 +19,28 @@ export function resumeOnLoggedSet(before: Workout, after: Workout, now: number):
   return { ...after, pausedMs: after.pausedMs + (now - after.pausedAt), pausedAt: undefined };
 }
 
+/**
+ * Checking a set starts the rest countdown for that exercise (`secondsFor`, 0 = no timer).
+ * Not after the workout's last set, and inside a superset only after its last exercise: you go
+ * straight from A to B and rest once the round is done.
+ */
+export function restAfterLoggedSet(before: Workout, after: Workout, now: number, secondsFor: (exerciseId: string) => number): Workout {
+  const doneIn = (w: Workout, rowId: string) => w.exercises.find((e) => e.id === rowId)?.sets.filter((s) => s.done).length ?? 0;
+  const row = after.exercises.find((e) => doneIn(after, e.id) > doneIn(before, e.id));
+  if (!row) return after;
+  const { rest: _old, ...w } = after;
+  if (!w.exercises.some((e) => e.sets.some((s) => !s.done))) return w;
+  const group = row.superset ? w.exercises.filter((e) => e.superset === row.superset) : [];
+  if (group.length > 1 && group[group.length - 1].id !== row.id) return w;
+  const seconds = secondsFor(row.exerciseId);
+  return seconds > 0 ? { ...w, rest: { endsAt: now + seconds * 1000, seconds } } : w;
+}
+
 /** Close the workout at `now`: completed sets only, an open pause counted into pausedMs. */
 export function finishWorkout(w: Workout, now: number): Workout {
   const pausedMs = w.pausedMs + (w.pausedAt ? now - w.pausedAt : 0);
-  return { ...keepCompletedSets(w), endedAt: now, pausedMs, pausedAt: undefined };
+  const { rest: _rest, ...kept } = keepCompletedSets(w);
+  return { ...kept, endedAt: now, pausedMs, pausedAt: undefined };
 }
 
 /** Mark the finished workout's program slot as done (only for the program that's running). */

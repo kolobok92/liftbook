@@ -9,17 +9,18 @@ import { supersetWith } from '@/lib/workoutOps';
 import { useExercisePicker } from '@/lib/picker';
 import { useStore } from '@/lib/store';
 import { carriedNote, currentRow, emptySet } from '@/lib/tracking';
-import type { Workout, WorkoutExercise } from '@/lib/types';
+import type { ProgramRef, Workout, WorkoutExercise } from '@/lib/types';
 import { C, R, themed } from '@/lib/theme';
 import { Button, MenuItem, Sheet, Txt, confirm } from '../ui';
 import { useKeypad } from './keypadStore';
 import { ExerciseCard } from './ExerciseCard';
 import { CardRegistryContext, useCardRegistryValue } from './focusChain';
 import { ReorderSheet } from './ReorderSheet';
+import { RestTimeSheet, fmtRest } from './RestBar';
 
 /** An added exercise, with its note from last time (e.g. machine settings). */
-function newWorkoutExercise(exerciseId: string): WorkoutExercise {
-  return { id: uid(), exerciseId, notes: carriedNote(useStore.getState().history, exerciseId), sets: [emptySet(), emptySet(), emptySet()] };
+function newWorkoutExercise(exerciseId: string, programRef?: ProgramRef): WorkoutExercise {
+  return { id: uid(), exerciseId, notes: carriedNote(useStore.getState().history, exerciseId, programRef), sets: [emptySet(), emptySet(), emptySet()] };
 }
 
 /** Runs of the list to draw together: a superset's consecutive members, else one exercise. */
@@ -133,7 +134,13 @@ export function WorkoutEditor({ workout, update, mode }: { workout: Workout; upd
   const afterMenu = useRef<(() => void) | null>(null);
   const [reorder, setReorder] = useState(false);
   // Row picking its superset partner (the "Superset with…" list).
+  const programRef = workout.programRef;
   const [pairFor, setPairFor] = useState<string | null>(null);
+  /** Exercise (catalog id) whose rest time is being picked. */
+  const [restFor, setRestFor] = useState<string | null>(null);
+  const restOn = useStore((s) => s.settings.restTimer);
+  const restDefault = useStore((s) => s.settings.restSeconds);
+  const restByExercise = useStore((s) => s.restByExercise);
   const pickExercises = useExercisePicker();
   // Exercise row whose note popup is open (opened from the ••• menu or by tapping the note).
   const [noteFor, setNoteFor] = useState<string | null>(null);
@@ -158,7 +165,7 @@ export function WorkoutEditor({ workout, update, mode }: { workout: Workout; upd
   );
 
   const addExercises = () => {
-    pickExercises({ multi: true }, (ids) => setExercises((exs) => [...exs, ...ids.map(newWorkoutExercise)]));
+    pickExercises({ multi: true }, (ids) => setExercises((exs) => [...exs, ...ids.map((id) => newWorkoutExercise(id, programRef))]));
   };
 
   const swap = useCallback(
@@ -170,14 +177,14 @@ export function WorkoutEditor({ workout, update, mode }: { workout: Workout; upd
               ? {
                   ...x,
                   exerciseId: newId,
-                  notes: carriedNote(useStore.getState().history, newId), // the new exercise's own note
+                  notes: carriedNote(useStore.getState().history, newId, programRef), // the new exercise's own note
                   sets: x.sets.map((s) => ({ ...s, weight: s.done ? s.weight : null, reps: s.done ? s.reps : null })),
                 }
               : x,
           ),
         ),
       ),
-    [pickExercises, setExercises],
+    [pickExercises, setExercises, programRef],
   );
 
   /** Deleting logged sets loses data, so confirm then; an untouched exercise just goes. */
@@ -275,6 +282,18 @@ export function WorkoutEditor({ workout, update, mode }: { workout: Workout; upd
           )}
         </Sheet>
 
+        <RestTimeSheet
+          visible={restFor != null}
+          onClose={() => setRestFor(null)}
+          title="Rest after each set"
+          value={restFor != null ? restByExercise[restFor] : undefined}
+          defaultSeconds={restDefault}
+          onPick={(seconds) => {
+            if (restFor) useStore.getState().setRestFor(restFor, seconds);
+            setRestFor(null);
+          }}
+        />
+
         <ReorderSheet visible={reorder} exercises={workout.exercises} onChange={(next) => setExercises(() => next)} onClose={() => setReorder(false)} />
 
         <Sheet
@@ -322,6 +341,19 @@ export function WorkoutEditor({ workout, update, mode }: { workout: Workout; upd
                   }}
                 />
               ) : null}
+              {mode === 'live' && restOn && (
+                <MenuItem
+                  testID="menu-rest"
+                  icon="timer-outline"
+                  label="Rest timer"
+                  right={<Txt dim>{restByExercise[current.exerciseId] === 0 ? 'Off' : fmtRest(restByExercise[current.exerciseId] ?? restDefault)}</Txt>}
+                  onPress={() => {
+                    const id = current!.exerciseId;
+                    afterMenu.current = () => setRestFor(id);
+                    setMenuFor(null);
+                  }}
+                />
+              )}
               <MenuItem
                 testID="menu-note"
                 icon="create-outline"

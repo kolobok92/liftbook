@@ -33,9 +33,10 @@ const history = [
  * dates on screen are deterministic, while a frozen clock would stall time-driven screen
  * transitions (blank frames). The running workout timer is masked in snapshots.
  */
-async function open(page: Page) {
+async function open(page: Page, { restTimer = false } = {}) {
   await page.clock.setSystemTime(NOW);
-  await openWith(page, { history });
+  // The rest bar floats over the list after every check: off here, with its own baseline below.
+  await openWith(page, { history, settings: { restTimer } });
 }
 
 const opts = { animations: 'disabled', caret: 'hide', maxDiffPixelRatio: 0.002 } as const;
@@ -98,6 +99,14 @@ test.describe('visual @visual', () => {
     await aboveKeypad(page, 'set-row-0-1');
     await snapEl(tid(page, 'set-row-0-1'), 'tracker-active-set');
     await snapEl(tid(page, 'keypad'), 'tracker-keypad');
+  });
+
+  test('tracker: the rest bar after a check', async ({ page }) => {
+    await open(page, { restTimer: true });
+    await tid(page, 'start-next-workout').click();
+    await tid(page, 'check-0-0').click();
+    await expect(tid(page, 'rest-bar')).toBeVisible();
+    await expect(tid(page, 'rest-bar')).toHaveScreenshot('tracker-rest-bar.png', { ...opts, mask: [tid(page, 'rest-remaining')], maxDiffPixelRatio: 0.03 });
   });
 
   test('tracker: a superset is one card with exercise tabs', async ({ page }) => {

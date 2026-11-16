@@ -215,6 +215,39 @@ test.describe('workout tracker', () => {
     await expect(tid(page, 'finish-workout')).toBeVisible();
   });
 
+  test('rest timer: starts on a check, adjusts, skips; per-exercise time; off in Profile', async ({ page }) => {
+    await openWith(page);
+    await tid(page, 'start-next-workout').click();
+    await typeSet(page, 'weight-0-0', '20');
+    await typeSet(page, 'reps-0-0', '12');
+    await expect(tid(page, 'rest-bar')).toHaveCount(0);
+    const listY = (await tid(page, 'set-row-0-1').boundingBox())!.y;
+    await tid(page, 'check-0-0').click();
+    await expect(tid(page, 'rest-remaining')).toHaveText(/^(2:00|1:5\d)$/);
+    // The bar floats: the list didn't move when it appeared.
+    expect((await tid(page, 'set-row-0-1').boundingBox())!.y).toBe(listY);
+    await tid(page, 'rest-plus').click();
+    await expect(tid(page, 'rest-remaining')).toHaveText(/^2:1\d$/);
+    await tid(page, 'rest-skip').click();
+    await expect(tid(page, 'rest-bar')).toHaveCount(0);
+
+    // This exercise rests 1:30 from now on.
+    await tid(page, 'exercise-menu-0').click();
+    await expect(tid(page, 'menu-rest')).toContainText('2:00');
+    await tid(page, 'menu-rest').click();
+    await tid(page, 'rest-pick-90').click();
+    await tid(page, 'check-0-1').click();
+    await expect(tid(page, 'rest-remaining')).toHaveText(/^1:(30|2\d)$/);
+    expect((await stored(page)).restByExercise).toEqual({ 'lateral-raise-cable': 90 });
+
+    await tid(page, 'minimize-workout').click();
+    await page.getByText('Profile', { exact: true }).last().click();
+    await tid(page, 'rest-switch').click();
+    await tid(page, 'active-workout-bar').click();
+    await tid(page, 'check-0-2').click();
+    await expect(tid(page, 'rest-bar')).toHaveCount(0);
+  });
+
   test('discarding a workout leaves no history and keeps the program position', async ({ page }) => {
     acceptDialogs(page);
     await openWith(page);

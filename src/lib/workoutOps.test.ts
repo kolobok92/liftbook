@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { makeBackup, mergePersisted, migrate, parseBackup } from './persistence';
 import type { ActiveProgram, Exercise, LoggedSet, Settings, Workout } from './types';
-import { convertWorkoutUnit, dedupeImported, finishWorkout, keepCompletedSets, markSlotDone, resumeOnLoggedSet, supersetWith, trainingMax, unmarkWorkout } from './workoutOps';
+import { convertWorkoutUnit, dedupeImported, finishWorkout, keepCompletedSets, markSlotDone, restAfterLoggedSet, resumeOnLoggedSet, supersetWith, trainingMax, unmarkWorkout } from './workoutOps';
 
 let n = 0;
 const set = (weight: number | null, reps: number | null, done = true): LoggedSet => ({ id: `s${n++}`, type: 'normal', weight, reps, rpe: null, done });
@@ -34,6 +34,26 @@ describe('finishing a workout', () => {
     expect(resumeOnLoggedSet(logged, paused, 1_800_000).pausedAt).toBe(1_500_000); // unchecked
     const running = { ...logged, pausedAt: undefined };
     expect(resumeOnLoggedSet({ ...paused, pausedAt: undefined }, running, 1_800_000)).toBe(running);
+  });
+
+  it('checking a set starts that exercise’s rest; not after the last set, not mid-superset, not on other edits', () => {
+    const check = (w: Workout, row: number, i: number): Workout => ({ ...w, exercises: w.exercises.map((e, r) => (r === row ? { ...e, sets: e.sets.map((s, k) => (k === i ? { ...s, done: true } : s)) } : e)) });
+    const secs = (id: string) => ({ bench: 180, row: 90, curl: 0 })[id] ?? 120;
+    const w = workout([['bench', [set(135, 8, false), set(135, 8, false)]], ['row', [set(90, 10, false)]], ['curl', [set(30, 10, false)]]]);
+    const a = restAfterLoggedSet(w, check(w, 0, 0), 1_000_000, secs);
+    expect(a.rest).toEqual({ endsAt: 1_180_000, seconds: 180 });
+    // An edit that logs nothing keeps the running countdown; an exercise set to 0 clears it.
+    expect(restAfterLoggedSet(a, { ...a, notes: 'x' }, 1_050_000, secs).rest).toEqual(a.rest);
+    expect(restAfterLoggedSet(a, check(a, 2, 0), 1_050_000, secs).rest).toBeUndefined();
+    // The workout's last set: nothing left to rest for.
+    const one = workout([['bench', [set(135, 8, false)]]]);
+    expect(restAfterLoggedSet(one, check(one, 0, 0), 1_000_000, secs).rest).toBeUndefined();
+    // Superset A+B: no rest after A, rest (B's time) after B.
+    const ss = { ...w, exercises: w.exercises.map((e, r) => (r < 2 ? { ...e, superset: 'g' } : e)) };
+    expect(restAfterLoggedSet(ss, check(ss, 0, 0), 1_000_000, secs).rest).toBeUndefined();
+    expect(restAfterLoggedSet(ss, check(ss, 1, 0), 1_000_000, secs).rest).toEqual({ endsAt: 1_090_000, seconds: 90 });
+    // A finished workout doesn't keep a countdown.
+    expect('rest' in finishWorkout(a, 1_100_000)).toBe(false);
   });
 
   it("marks the running program's slot, and only that program's", () => {
@@ -101,10 +121,11 @@ describe('backups', () => {
     settings: { unit: 'kg' as const },
   };
   it('round-trips, and old (unversioned) backups go through migrate', () => {
-    const back = parseBackup(makeBackup(data, new Date('2026-10-20T10:00:00Z')));
-    expect(back).toEqual({ ok: true, exportedAt: '2026-10-20T10:00:00.000Z', data: { ...data, activeProgram: undefined } });
+    const withRest = { ...data, restByExercise: { bench: 180, curl: 0 } }; // per-exercise rest times travel too
+    const back = parseBackup(makeBackup(withRest, new Date('2026-10-20T10:00:00Z')));
+    expect(back).toEqual({ ok: true, exportedAt: '2026-10-20T10:00:00.000Z', data: { ...withRest, activeProgram: undefined } });
     const v0 = parseBackup(JSON.stringify({ app: 'liftbook', programs: [], history: [{ id: 'old' }] }));
-    expect(v0.ok && v0.data).toMatchObject({ history: [{ id: 'old' }], customExercises: [], templates: [], oneRepMaxes: {}, settings: {} });
+    expect(v0.ok && v0.data).toMatchObject({ history: [{ id: 'old' }], customExercises: [], templates: [], oneRepMaxes: {}, restByExercise: {}, settings: {} });
   });
   it('refuses other files and backups from a newer app', () => {
     expect(parseBackup('not json')).toMatchObject({ ok: false });

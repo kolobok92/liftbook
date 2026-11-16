@@ -66,6 +66,9 @@ the phone with no PC after a fiddlier setup.)
   doesn't move or open anything; a finished exercise folds to "✓ name".
 - **Current set:** the orange pill + circle marks the set you're on; it follows you if you do
   exercises out of order.
+- **Rest timer:** checking a set starts a countdown at the bottom (−15 / +15 / Skip; it buzzes
+  at zero). Default time and on/off: Profile → Workout. One exercise's own time: ••• → Rest
+  timer. Checking a set while the workout clock is paused starts the clock again.
 - **Supersets:** ••• → Superset with… → pick any exercise. It becomes one card with a tab per
   exercise that flips to the set you're due (A1 → B1 → A2).
 - **Notes:** an exercise's note (e.g. machine settings) carries into the next session by itself.

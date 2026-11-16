@@ -1,8 +1,10 @@
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { AppSwitch, Card, Chip, Divider, H1, MenuItem, SectionTitle, Segmented, Txt, confirm, notify } from '@/components/ui';
 import { NumInput } from '@/components/workout/NumInput';
+import { RestTimeSheet, fmtRest } from '@/components/workout/RestBar';
 import { exportCsv, importCsv } from '@/lib/csv';
 import { pickTextFile, saveTextFile } from '@/lib/files';
 import { useExercises } from '@/lib/hooks';
@@ -12,6 +14,7 @@ import type { ActiveProgram, Exercise, Program, Template, Unit, Workout } from '
 
 export default function Profile() {
   const settings = useStore((s) => s.settings);
+  const [restPick, setRestPick] = useState(false);
   const historyCount = useStore((s) => s.history.length);
   const { list, byId } = useExercises();
   const unit = settings.unit;
@@ -55,6 +58,7 @@ export default function Profile() {
       customExercises: st.customExercises,
       templates: st.templates,
       oneRepMaxes: st.oneRepMaxes,
+      restByExercise: st.restByExercise,
       settings: st.settings,
     });
     try {
@@ -81,6 +85,7 @@ export default function Profile() {
         customExercises: data.customExercises as Exercise[],
         templates: data.templates as Template[],
         oneRepMaxes: data.oneRepMaxes,
+        restByExercise: data.restByExercise ?? {},
         settings: { ...settings, ...data.settings },
       });
       notify('Restored', 'Your data has been restored.');
@@ -121,6 +126,18 @@ export default function Profile() {
         <Row label="Fill in numbers automatically" sub="Start each set with last session's numbers already entered instead of shown as hints. Tapping a set fills it in either way.">
           <AppSwitch testID="autofill-switch" value={settings.autofillValues} onValueChange={(v) => useStore.getState().updateSettings({ autofillValues: v })} />
         </Row>
+        <Divider />
+        <Row label="Rest timer" sub="Checking a set starts a countdown. Each exercise can have its own time (••• in a workout).">
+          <AppSwitch testID="rest-switch" value={settings.restTimer} onValueChange={(v) => useStore.getState().updateSettings({ restTimer: v })} />
+        </Row>
+        {settings.restTimer && (
+          <>
+            <Divider />
+            <Row label="Rest between sets">
+              <Chip testID="rest-default" label={fmtRest(settings.restSeconds)} onPress={() => setRestPick(true)} />
+            </Row>
+          </>
+        )}
         <Divider />
         <Row label="Appearance">
           <View style={{ width: 210 }}>
@@ -185,6 +202,16 @@ export default function Profile() {
           }}
         />
       </Card>
+      <RestTimeSheet
+        visible={restPick}
+        onClose={() => setRestPick(false)}
+        title="Rest between sets"
+        value={settings.restSeconds}
+        onPick={(seconds) => {
+          if (seconds) useStore.getState().updateSettings({ restSeconds: seconds });
+          setRestPick(false);
+        }}
+      />
     </Screen>
   );
 }

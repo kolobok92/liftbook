@@ -150,6 +150,8 @@ export type Workout = {
   /** How it became current: a set checked (a superset moves on to its partner) or a field
    * opened (you're on it). */
   currentBy?: 'check' | 'open';
+  /** The running rest countdown (live workout only): started by checking a set. */
+  rest?: { endsAt: number; seconds: number };
 };
 
 export type ActiveProgram = {
@@ -174,6 +176,9 @@ export type Settings = {
   plateRounding: { lb: number; kg: number };
   availablePlates: { lb: number[]; kg: number[] };
   haptics: boolean;
+  /** Checking a set starts a rest countdown of restSeconds (an exercise can override the time). */
+  restTimer: boolean;
+  restSeconds: number;
   /** 'system' follows the phone's light/dark setting. */
   appearance: 'system' | 'light' | 'dark';
 };

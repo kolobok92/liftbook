@@ -393,21 +393,27 @@ export function templateFromWorkout(w: Workout, name: string, now: number): Temp
 /**
  * The note an exercise carries into a new session (Boostcamp keeps notes like machine settings
  * from one session to the next): its note in the latest finished workout that had the exercise.
+ * Like "Previous" (findPrevious), the last run of the same program day wins when there is one,
+ * so the same exercise on two days (two gyms, two machines) keeps a note per day.
  * Deleting a note stops it carrying, since that session saves it empty.
  */
-export function carriedNote(history: Workout[], exerciseId: string): string {
+export function carriedNote(history: Workout[], exerciseId: string, programRef?: ProgramRef): string {
   let latest: { at: number; notes: string } | undefined;
+  let sameDay: { at: number; notes: string } | undefined;
   for (const w of history) {
     if (!w.endedAt) continue;
     const e = w.exercises.find((x) => x.exerciseId === exerciseId);
-    if (e && (!latest || w.startedAt > latest.at)) latest = { at: w.startedAt, notes: e.notes };
+    if (!e) continue;
+    if (!latest || w.startedAt > latest.at) latest = { at: w.startedAt, notes: e.notes };
+    const same = programRef && w.programRef?.programId === programRef.programId && w.programRef.day === programRef.day;
+    if (same && (!sameDay || w.startedAt > sameDay.at)) sameDay = { at: w.startedAt, notes: e.notes };
   }
-  return latest?.notes ?? '';
+  return (sameDay ?? latest)?.notes ?? '';
 }
 
 /** A new workout with each exercise's note carried over from last time (empty notes only). */
 export function carryNotes(w: Workout, history: Workout[]): Workout {
-  return { ...w, exercises: w.exercises.map((e) => (e.notes ? e : { ...e, notes: carriedNote(history, e.exerciseId) })) };
+  return { ...w, exercises: w.exercises.map((e) => (e.notes ? e : { ...e, notes: carriedNote(history, e.exerciseId, w.programRef) })) };
 }
 
 /**

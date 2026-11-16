@@ -30,6 +30,7 @@ export type BackupData = {
   customExercises: unknown[];
   templates: unknown[];
   oneRepMaxes: Record<string, number>;
+  restByExercise?: Record<string, number>;
   settings: Partial<Settings>;
 };
 
@@ -59,6 +60,7 @@ export function parseBackup(text: string): { ok: true; data: BackupData; exporte
       customExercises: (m.customExercises as unknown[]) ?? [],
       templates: (m.templates as unknown[]) ?? [],
       oneRepMaxes: (m.oneRepMaxes as Record<string, number>) ?? {},
+      restByExercise: (m.restByExercise as Record<string, number>) ?? {},
       settings: (m.settings as Partial<Settings>) ?? {},
     }),
   };

@@ -219,6 +219,16 @@ describe('notes carry over (Boostcamp)', () => {
     expect(carriedNote([...h, legPress('', 3000)], 'leg-press')).toBe(''); // cleared last time
     expect(carriedNote(h, 'squat')).toBe('');
   });
+  it('the same exercise on two program days keeps a note per day (two gyms); other days fall back to the latest', () => {
+    const on = (day: number, notes: string, at: number) => ({ ...legPress(notes, at), programRef: { programId: 'p', week: 0, day } });
+    const h = [on(0, 'Main gym: seat 3', 1000), on(4, 'Home: pin 2', 2000)];
+    expect(carriedNote(h, 'leg-press', { programId: 'p', week: 1, day: 0 })).toBe('Main gym: seat 3');
+    expect(carriedNote(h, 'leg-press', { programId: 'p', week: 1, day: 4 })).toBe('Home: pin 2');
+    expect(carriedNote(h, 'leg-press', { programId: 'p', week: 1, day: 2 })).toBe('Home: pin 2');
+    expect(carriedNote(h, 'leg-press', { programId: 'other', week: 0, day: 0 })).toBe('Home: pin 2');
+    const next = carryNotes(workout(3000, [{ id: 'n', exerciseId: 'leg-press', notes: '', sets: [] }], { endedAt: undefined, programRef: { programId: 'p', week: 1, day: 0 } }), h);
+    expect(next.exercises[0].notes).toBe('Main gym: seat 3');
+  });
   it('a note typed in the new session is kept, not overwritten', () => {
     const next = carryNotes(workout(3000, [{ id: 'n', exerciseId: 'leg-press', notes: 'Seat 4', sets: [] }], { endedAt: undefined }), [legPress('Set at 3 depth', 1000)]);
     expect(next.exercises[0].notes).toBe('Seat 4');

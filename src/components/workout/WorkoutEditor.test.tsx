@@ -1,7 +1,8 @@
 import { describe, expect, it, type jest } from '@jest/globals';
-import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import * as Haptics from 'expo-haptics';
 import { Keypad } from './Keypad';
+import { RestBar } from './RestBar';
 import { WorkoutEditor } from './WorkoutEditor';
 import { useStore } from '@/lib/store';
 import type { LoggedSet, Workout } from '@/lib/types';
@@ -18,6 +19,7 @@ function Tracker() {
   return active ? (
     <>
       <WorkoutEditor workout={active} update={updateActive} mode="live" />
+      <RestBar />
       <Keypad />
     </>
   ) : null;
@@ -245,6 +247,31 @@ describe('tracker', () => {
     await fireEvent.press(el('check-0-0')); // uncheck
     expect(sets()[0].done).toBe(false);
     expect(useStore.getState().active!.pausedAt).toBeTruthy();
+  });
+
+  it('rest timer: a check starts it; −15/+15 move the end; Skip and running out clear it; off in Profile = none', async () => {
+    await startWith([BENCH], { sets: 3 });
+    const rest = () => useStore.getState().active!.rest;
+    await log(0, '135', '8');
+    expect(rest()!.seconds).toBe(120);
+    expect(el('rest-remaining').props.children).toMatch(/^(2:00|1:59)$/);
+    const end = rest()!.endsAt;
+    await fireEvent.press(el('rest-plus'));
+    expect(rest()).toEqual({ endsAt: end + 15_000, seconds: 135 });
+    await fireEvent.press(el('rest-minus'));
+    await fireEvent.press(el('rest-skip'));
+    expect(rest()).toBeUndefined();
+    expect(screen.queryByTestId('rest-bar')).toBeNull();
+    // This exercise rests 90 s; a countdown already past its end goes away by itself.
+    await act(async () => useStore.getState().setRestFor(BENCH, 90));
+    await fireEvent.press(el('check-0-1'));
+    expect(rest()!.seconds).toBe(90);
+    await act(async () => useStore.getState().updateActive((w) => ({ ...w, rest: { endsAt: Date.now() - 1, seconds: 90 } })));
+    await waitFor(() => expect(rest()).toBeUndefined()); // on the bar's next tick
+    await act(async () => useStore.getState().updateSettings({ restTimer: false }));
+    await fireEvent.press(el('check-0-1')); // uncheck
+    await fireEvent.press(el('check-0-1'));
+    expect(rest()).toBeUndefined();
   });
 
   it('zero reps is not a set: the circle does nothing', async () => {
