@@ -1,14 +1,17 @@
+import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { DayPreview } from '@/components/DayPreview';
 import { MuscleBars, MuscleMap } from '@/components/MuscleMap';
 import { Screen } from '@/components/Screen';
-import { Button, Card, Empty, MenuItem, SectionTitle, Sheet, Txt, confirm } from '@/components/ui';
+import { Button, Card, Empty, MenuItem, SectionTitle, Sheet, Txt, confirm, haptic } from '@/components/ui';
 import { programMuscleShare } from '@/lib/analytics';
 import { fmtNum } from '@/lib/calc';
 import { useExercises } from '@/lib/hooks';
 import { cloneProgram } from '@/lib/programOps';
+import { programText } from '@/lib/programText';
 import { goHome } from '@/lib/nav';
 import { useStore } from '@/lib/store';
 import { daysPerWeek } from '@/lib/tracking';
@@ -21,6 +24,7 @@ export default function ProgramDetail() {
   const { byId } = useExercises();
   const [week, setWeek] = useState(0);
   const [menu, setMenu] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [showAllMuscles, setShowAllMuscles] = useState(false);
   const share = useMemo(() => (program ? programMuscleShare(program, byId) : []), [program, byId]);
 
@@ -44,11 +48,29 @@ export default function ProgramDetail() {
         options={{
           title: '',
           headerRight: () => (
-            <Pressable style={{ paddingHorizontal: 12 }} testID="program-menu" onPress={() => setMenu(true)} hitSlop={8}>
-              <Txt color={C.accentText} weight="600">
-                •••
-              </Txt>
-            </Pressable>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              {/* The whole program as text on the clipboard, in one tap. */}
+              <Pressable
+                style={{ paddingHorizontal: 12 }}
+                testID="copy-program"
+                accessibilityRole="button"
+                accessibilityLabel={copied ? 'Copied' : 'Copy program as text'}
+                hitSlop={8}
+                onPress={async () => {
+                  await Clipboard.setStringAsync(programText(program, byId));
+                  haptic('success');
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+              >
+                <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={20} color={C.accentText} />
+              </Pressable>
+              <Pressable style={{ paddingHorizontal: 12 }} testID="program-menu" onPress={() => setMenu(true)} hitSlop={8}>
+                <Txt color={C.accentText} weight="600">
+                  •••
+                </Txt>
+              </Pressable>
+            </View>
           ),
         }}
       />
