@@ -41,6 +41,22 @@ test.describe('programs', () => {
     await expect(tid(page, 'set-row-0-0')).toContainText('RPE 8');
   });
 
+  test('Copy puts the whole program on the clipboard as text, in one tap', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await openWith(page);
+    await page.getByText('Programs', { exact: true }).last().click();
+    await tid(page, 'program-card-pplua').click();
+    await tid(page, 'copy-program').click();
+    await expect(tid(page, 'copy-program')).toHaveAttribute('aria-label', 'Copied');
+    const text = await page.evaluate(() => navigator.clipboard.readText());
+    // The Windows clipboard hands back CRLF line ends.
+    const lines = text.replace(/\r/g, '').split('\n');
+    expect(lines.slice(0, 6)).toEqual(['PPLUA (Loop, 5 days per cycle)', '', 'Push / Pull / Legs / Upper / Arms, on a loop.', '', 'Day 1: Push', '1. Lateral Raise (Cable): 4 × 8–12 reps, RPE 8–10']);
+    expect(text).toContain('Day 5: ');
+    // The button goes back to "Copy" by itself.
+    await expect(tid(page, 'copy-program')).toHaveAttribute('aria-label', 'Copy program as text', { timeout: 5000 });
+  });
+
   test('refuses to save an unnamed program', async ({ page }) => {
     let msg = '';
     page.on('dialog', (d) => {
