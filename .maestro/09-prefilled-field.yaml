@@ -7,14 +7,22 @@ tags:
   - ios
 ---
 # Starting state from the test-build seed link (src/lib/e2eScenarios.ts), not setup taps.
-- clearState
+# The app is opened first: on a cold iOS simulator a link to an app that isn't running can be
+# dropped, leaving the home screen.
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Today"
+    timeout: 30000
 - openLink: liftbook://e2e-seed?scenario=bench-active
-# iOS asks before following a link into the app.
+# iOS asks before following a link into the app, sometimes a moment after the link is sent.
 - runFlow:
     when:
-      visible: "Open"
+      platform: iOS
     commands:
-      - tapOn: "Open"
+      - tapOn:
+          text: "Open"
+          optional: true
 - extendedWaitUntil:
     visible:
       id: "weight-0-0"
