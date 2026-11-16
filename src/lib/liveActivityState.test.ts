@@ -40,7 +40,10 @@ describe('workoutActivity', () => {
 
   it('while paused shows progress instead of a clock that would keep running', () => {
     const a = workoutActivity(w([['bench', [true, false, false]], ['row', [true]]], { pausedAt: 2_000_000 }), byId);
-    expect(a).toEqual({ title: 'Bench Press (Barbell)', subtitle: '2/4 sets done', progress: 0.5 });
+    // Counted for the exercise you're on, not the whole workout.
+    expect(a).toEqual({ title: 'Bench Press (Barbell)', subtitle: '1/3 sets done', progress: 1 / 3 });
+    const onRow = workoutActivity(w([['bench', [true, false, false]], ['row', [true, true, false, false]]], { pausedAt: 2_000_000, currentRowId: 'e1' }), byId);
+    expect(onRow).toEqual({ title: 'T-Bar Row', subtitle: '2/4 sets done', progress: 0.5 });
   });
 
   it('all done, unknown exercise ids and empty workouts read sensibly', () => {
