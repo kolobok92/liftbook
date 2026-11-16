@@ -73,7 +73,7 @@ test('capture screens @screens', async ({ page }) => {
   await page.waitForTimeout(800);
   await shot('08-analytics');
   await tid(page, 'open-exercises').click();
-  await page.getByText('Incline Chest Press (Machine)', { exact: true }).click();
+  await page.getByText('Incline Chest Press (Machine)', { exact: true }).filter({ visible: true }).first().click();
   await page.waitForTimeout(800);
   await shot('09-exercise-records');
   await page.goBack();

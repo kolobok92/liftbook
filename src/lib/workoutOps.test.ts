@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { makeBackup, mergePersisted, migrate, parseBackup } from './persistence';
 import type { ActiveProgram, Exercise, LoggedSet, Settings, Workout } from './types';
-import { convertWorkoutUnit, dedupeImported, finishWorkout, keepCompletedSets, markSlotDone, supersetWith, trainingMax, unmarkWorkout } from './workoutOps';
+import { convertWorkoutUnit, dedupeImported, finishWorkout, keepCompletedSets, markSlotDone, resumeOnLoggedSet, supersetWith, trainingMax, unmarkWorkout } from './workoutOps';
 
 let n = 0;
 const set = (weight: number | null, reps: number | null, done = true): LoggedSet => ({ id: `s${n++}`, type: 'normal', weight, reps, rpe: null, done });
@@ -24,6 +24,16 @@ describe('finishing a workout', () => {
     expect(f.exercises.map((e) => [e.exerciseId, e.sets.length])).toEqual([['bench', 1]]);
     expect(f).toMatchObject({ endedAt: 1_800_000, pausedMs: 330_000, pausedAt: undefined });
     expect(keepCompletedSets(workout([['x', [set(1, 1, false)]]])).exercises).toEqual([]);
+  });
+
+  it('a set logged during a pause ends the pause without counting it; other edits leave it', () => {
+    const paused = workout([['bench', [set(135, 8, false), set(135, 8, false)]]], { pausedMs: 30_000, pausedAt: 1_500_000 });
+    const logged = { ...paused, exercises: [{ ...paused.exercises[0], sets: [{ ...paused.exercises[0].sets[0], done: true }, paused.exercises[0].sets[1]] }] };
+    expect(resumeOnLoggedSet(paused, logged, 1_800_000)).toMatchObject({ pausedMs: 330_000, pausedAt: undefined });
+    expect(resumeOnLoggedSet(paused, { ...paused, notes: 'x' }, 1_800_000).pausedAt).toBe(1_500_000);
+    expect(resumeOnLoggedSet(logged, paused, 1_800_000).pausedAt).toBe(1_500_000); // unchecked
+    const running = { ...logged, pausedAt: undefined };
+    expect(resumeOnLoggedSet({ ...paused, pausedAt: undefined }, running, 1_800_000)).toBe(running);
   });
 
   it("marks the running program's slot, and only that program's", () => {

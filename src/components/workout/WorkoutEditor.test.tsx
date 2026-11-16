@@ -232,6 +232,21 @@ describe('tracker', () => {
     expect(screen.queryByTestId('keypad')).toBeNull();
   });
 
+  it('logging a set while the timer is paused resumes it; unchecking does not', async () => {
+    await startWith([BENCH], { sets: 2 });
+    await type('weight-0-0', '135');
+    await type('reps-0-0', '8');
+    await act(async () => useStore.getState().togglePause());
+    expect(useStore.getState().active!.pausedAt).toBeTruthy();
+    await fireEvent.press(el('check-0-0'));
+    expect(sets()[0].done).toBe(true);
+    expect(useStore.getState().active!.pausedAt).toBeUndefined();
+    await act(async () => useStore.getState().togglePause());
+    await fireEvent.press(el('check-0-0')); // uncheck
+    expect(sets()[0].done).toBe(false);
+    expect(useStore.getState().active!.pausedAt).toBeTruthy();
+  });
+
   it('zero reps is not a set: the circle does nothing', async () => {
     await startWith([BENCH], { sets: 1 });
     await type('reps-0-0', '0');

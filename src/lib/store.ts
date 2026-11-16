@@ -29,7 +29,7 @@ import type {
   Unit,
   Workout,
 } from './types';
-import { convertStoredWeight, convertWorkoutUnit, dedupeImported, finishWorkout, markSlotDone, trainingMax, unmarkWorkout } from './workoutOps';
+import { convertStoredWeight, convertWorkoutUnit, dedupeImported, finishWorkout, markSlotDone, resumeOnLoggedSet, trainingMax, unmarkWorkout } from './workoutOps';
 
 export type FinishResult = { workout: Workout; prs: PR[]; pending?: PendingProgramChange };
 
@@ -158,7 +158,7 @@ export const useStore = create<State & Actions>()(
         startEmptyWorkout: () => begin(newWorkout('Workout', get().settings.unit)),
         startFromWorkout: (w) => begin(repeatWorkout(w, get().settings.unit)),
         startFromTemplate: (t) => begin(newWorkout(t.name, get().settings.unit, t.exercises.map(workoutExerciseFromProgram))),
-        updateActive: (fn) => set((st) => (st.active ? { active: fn(st.active) } : {})),
+        updateActive: (fn) => set((st) => (st.active ? { active: resumeOnLoggedSet(st.active, fn(st.active), Date.now()) } : {})),
         togglePause: () =>
           set((st) => {
             const w = st.active;

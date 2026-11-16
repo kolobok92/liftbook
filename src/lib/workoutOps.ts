@@ -9,6 +9,16 @@ export function keepCompletedSets(w: Workout): Workout {
   return { ...w, exercises: w.exercises.map((e) => ({ ...e, sets: e.sets.filter((s) => s.done) })).filter((e) => e.sets.length > 0) };
 }
 
+/**
+ * Logging a set while the timer is paused means you're lifting again: end the pause (the paused
+ * stretch still doesn't count). Unchecking or editing leaves a pause alone.
+ */
+export function resumeOnLoggedSet(before: Workout, after: Workout, now: number): Workout {
+  const done = (w: Workout) => w.exercises.reduce((n, e) => n + e.sets.filter((s) => s.done).length, 0);
+  if (!after.pausedAt || done(after) <= done(before)) return after;
+  return { ...after, pausedMs: after.pausedMs + (now - after.pausedAt), pausedAt: undefined };
+}
+
 /** Close the workout at `now`: completed sets only, an open pause counted into pausedMs. */
 export function finishWorkout(w: Workout, now: number): Workout {
   const pausedMs = w.pausedMs + (w.pausedAt ? now - w.pausedAt : 0);
