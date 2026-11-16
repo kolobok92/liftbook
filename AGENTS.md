@@ -66,8 +66,11 @@ Private Boostcamp-style lifting tracker. Local-only data (zustand + AsyncStorage
 
 ## Native checks (Maestro)
 
-Loop: component tests first, then ONE targeted flow on Android; the full flow suite only as the
-pre-commit gate; iOS once as the final gate. Never debug through CI.
+Loop: component tests first, then ONE targeted flow on Android. Per commit: `npm run check` plus
+the one affected flow. The full flow suite only before a publish (the phone build), so batch
+several small changes into one gate and one build. The iOS simulator workflow only for native
+changes (Swift, plugins, new native modules); its flows are behind the app since late October
+(7 of 9 fail on stale assertions and iOS dialogs, not app bugs). Never debug through CI.
 
 Measured costs here (software-GPU emulator, one emulator, flows run sequentially — the user
 doesn't want parallel emulators or the host GPU): component tests ≈ 5 s; JS-only APK swap ≈ 25 s;
