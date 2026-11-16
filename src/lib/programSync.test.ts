@@ -57,7 +57,7 @@ describe('program sync', () => {
     w.exercises.splice(2, 1);
     const next = applyWorkoutToProgram(p, w, 'template', new Set(['ex:bench0'])).weeks[0].days[0];
     expect(next.exercises.map((e) => e.exerciseId)).toEqual(['incline', 'fly', 'dip']); // dip removal rejected
-    expect(next.exercises[0].notes).toBe('pause'); // program instructions kept on a swap
+    expect(next.exercises[0].notes).toBe(''); // the note written for the old exercise doesn't follow the swap
   });
 
   it('a rejected reorder keeps program order while accepting other changes', () => {
@@ -92,6 +92,33 @@ describe('program sync', () => {
     expect(pct(0)).toEqual([70, 70, 70]); // earlier week untouched
     expect(pct(1)).toEqual([75, 75, 75, 75]);
     expect(pct(2)).toEqual([80, 80, 80, 80]); // later week: its own 80%, one more set
+  });
+
+  it('a swap taken into the program drops the note written for the old exercise', () => {
+    const p = program('periodized');
+    const w = workoutFor(p);
+    w.exercises[0] = { ...w.exercises[0], exerciseId: 'incline', instructions: undefined };
+    const next = applyWorkoutToProgram(p, w, 'fromWeek', new Set(['ex:bench0']));
+    expect(next.weeks.map((wk) => [wk.days[0].exercises[0].exerciseId, wk.days[0].exercises[0].notes])).toEqual([['incline', ''], ['incline', ''], ['incline', '']]);
+    // Declined: the bench and its note stay.
+    expect(applyWorkoutToProgram(p, w, 'fromWeek', new Set()).weeks[0].days[0].exercises[0]).toMatchObject({ exerciseId: 'bench', notes: 'pause' });
+  });
+
+  it('a note typed this session is offered on its own; a carried one that was left alone is not', () => {
+    const p = program();
+    const day = p.weeks[0].days[0];
+    const w = workoutFor(p);
+    // Carried in and untouched (fly), carried in and edited (bench), no baseline recorded (dip).
+    w.exercises[0] = { ...w.exercises[0], notes: 'seat 4', noteAtStart: 'seat 3' };
+    w.exercises[1] = { ...w.exercises[1], notes: 'pin 6', noteAtStart: 'pin 6' };
+    w.exercises[2] = { ...w.exercises[2], notes: 'lean in' };
+    const items = changeItems(day, dayFromWorkout(w, day), name);
+    expect(items).toEqual([{ key: 'note:bench0', kind: 'note', peId: 'bench0', title: 'bench', details: ['Note: seat 4'] }]);
+    expect(applyWorkoutToProgram(p, w, 'template', new Set(['note:bench0'])).weeks[0].days[0].exercises.map((e) => e.notes)).toEqual(['seat 4', '', '']);
+    expect(applyWorkoutToProgram(p, w, 'template', new Set()).weeks[0].days[0].exercises[0].notes).toBe('pause');
+    // Taking the exercise's other changes doesn't take the note with them.
+    w.exercises[0].sets.push(emptySet());
+    expect(applyWorkoutToProgram(p, w, 'template', new Set(['ex:bench0'])).weeks[0].days[0].exercises[0]).toMatchObject({ notes: 'pause', sets: { length: 4 } });
   });
 
   it('periodized "this week only" leaves other weeks alone', () => {

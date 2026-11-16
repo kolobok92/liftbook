@@ -178,6 +178,8 @@ export function WorkoutEditor({ workout, update, mode }: { workout: Workout; upd
                   ...x,
                   exerciseId: newId,
                   notes: carriedNote(useStore.getState().history, newId, programRef), // the new exercise's own note
+                  noteAtStart: carriedNote(useStore.getState().history, newId, programRef),
+                  instructions: undefined, // the program's note was written for the old exercise
                   sets: x.sets.map((s) => ({ ...s, weight: s.done ? s.weight : null, reps: s.done ? s.reps : null })),
                 }
               : x,

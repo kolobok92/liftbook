@@ -411,9 +411,19 @@ export function carriedNote(history: Workout[], exerciseId: string, programRef?:
   return (sameDay ?? latest)?.notes ?? '';
 }
 
-/** A new workout with each exercise's note carried over from last time (empty notes only). */
+/**
+ * A new workout with each exercise's note carried over from last time (empty notes only). A note
+ * that already shows as the program's instruction isn't repeated under it.
+ */
 export function carryNotes(w: Workout, history: Workout[]): Workout {
-  return { ...w, exercises: w.exercises.map((e) => (e.notes ? e : { ...e, notes: carriedNote(history, e.exerciseId, w.programRef) })) };
+  return {
+    ...w,
+    exercises: w.exercises.map((e) => {
+      const carried = e.notes || carriedNote(history, e.exerciseId, w.programRef);
+      const notes = carried.trim() === (e.instructions ?? '').trim() ? '' : carried;
+      return { ...e, notes, noteAtStart: notes };
+    }),
+  };
 }
 
 /**

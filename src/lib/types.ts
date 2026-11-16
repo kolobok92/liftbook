@@ -123,6 +123,8 @@ export type WorkoutExercise = {
   notes: string;
   /** Instructions copied from the program, shown read-only. */
   instructions?: string;
+  /** The note as it was carried in at the start, so one typed this session can be offered to the program. */
+  noteAtStart?: string;
   /** The program exercise this came from, so in-workout edits can be applied back. */
   programExerciseId?: string;
   superset?: string;

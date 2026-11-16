@@ -4,7 +4,7 @@ import type { Program, ProgramDay, ProgramExercise, SetTarget, Workout } from '.
 
 /**
  * Applying in-workout edits (swap, add/remove sets or exercises, reorder, supersets, set
- * types) back to the program, chosen per exercise. Only structure is compared — sets that
+ * types, a note typed this session) back to the program, chosen per exercise. Only structure is compared — sets that
  * were simply not checked off still exist in the workout, so skipping a set isn't "removing" it.
  */
 
@@ -13,7 +13,7 @@ export type ApplyScope = 'template' | 'week' | 'fromWeek';
 /** One selectable change: everything that changed about one exercise, or a day-level change. */
 export type ChangeItem = {
   key: string;
-  kind: 'exercise' | 'order' | 'superset';
+  kind: 'exercise' | 'note' | 'order' | 'superset';
   /** Program exercise id (original or newly added) for exercise items. */
   peId?: string;
   title: string;
@@ -34,7 +34,13 @@ export function dayFromWorkout(workout: Workout, day: ProgramDay): ProgramDay {
       last = t;
       return t;
     });
-    return { id: base?.id ?? `new-${we.id}`, exerciseId: we.exerciseId, notes: base?.notes ?? we.instructions ?? '', superset: we.superset, sets };
+    // A note typed (or changed) this session becomes the program's note. A swapped-in exercise
+    // never inherits the note written for the one it replaced.
+    const typed = we.notes.trim();
+    const noteChanged = we.noteAtStart !== undefined && !!typed && typed !== we.noteAtStart.trim();
+    const swapped = !!base && base.exerciseId !== we.exerciseId;
+    const notes = noteChanged ? typed : swapped ? '' : (base?.notes ?? we.instructions ?? '');
+    return { id: base?.id ?? `new-${we.id}`, exerciseId: we.exerciseId, notes, superset: we.superset, sets };
   });
   return { ...day, exercises };
 }
@@ -67,6 +73,10 @@ export function changeItems(original: ProgramDay, updated: ProgramDay, nameOf: (
     if (u.sets.length !== pe.sets.length) details.push(`${pe.sets.length} → ${u.sets.length} sets`);
     else if (u.sets.some((s, i) => s.type !== pe.sets[i].type)) details.push('Set types changed');
     if (details.length) items.push({ key: `ex:${pe.id}`, kind: 'exercise', peId: pe.id, title: nameOf(pe.exerciseId), details });
+    // Its own choice, apart from the exercise's other changes. After a swap the note goes with the swap.
+    if (u.exerciseId === pe.exerciseId && u.notes !== pe.notes) {
+      items.push({ key: `note:${pe.id}`, kind: 'note', peId: pe.id, title: nameOf(pe.exerciseId), details: [`Note: ${u.notes}`] });
+    }
   }
   for (const u of updated.exercises) {
     if (!orig.has(u.id)) items.push({ key: `ex:${u.id}`, kind: 'exercise', peId: u.id, title: nameOf(u.exerciseId), details: [`Added (${u.sets.length} sets)`] });
@@ -101,6 +111,8 @@ export function mergeAccepted(original: ProgramDay, updated: ProgramDay, accepte
     if (!o && u) return takeUpdated(id) ? { ...u, id: uid(), superset: keepSuperset ? undefined : u.superset } : undefined; // added
     if (!o || !u) return undefined;
     const base = takeUpdated(id) ? { ...u } : { ...o };
+    const swapTaken = takeUpdated(id) && u.exerciseId !== o.exerciseId;
+    base.notes = swapTaken || accepted.has(`note:${id}`) ? u.notes : o.notes;
     base.superset = keepSuperset ? o.superset : u.superset;
     return base;
   };
@@ -143,7 +155,9 @@ function applyToOtherWeek(target: ProgramDay, original: ProgramDay, merged: Prog
       const t = base.sets[j] ?? base.sets[base.sets.length - 1] ?? s;
       return { ...t, id: j < base.sets.length ? t.id : uid(), type: s.type };
     });
-    return { ...base, exerciseId: pe.exerciseId, superset, sets };
+    // That week's own note stays unless this edit changed the note or the exercise.
+    const noteEdited = pe.notes !== original.exercises[k!].notes || pe.exerciseId !== base.exerciseId;
+    return { ...base, exerciseId: pe.exerciseId, notes: noteEdited ? pe.notes : base.notes, superset, sets };
   });
   return { ...target, exercises };
 }
