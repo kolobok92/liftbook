@@ -1,7 +1,7 @@
-# Native iOS check of the core loop: log a session, finish, repeat it, and see last time's
+# Device check of the core loop: log a session, finish, repeat it, and see last time's
 # numbers in Previous + tap-to-fill. Ids are React Native testIDs (iOS accessibilityIdentifier).
-# Runs on the iOS simulator build (CI) and a local Android release build
-# (node scripts/maestro-android.mjs); both pass -e APP_ID=… (a flow env default would override -e).
+# Runs on a local Android release build (node scripts/maestro-android.mjs); the iOS simulator
+# gate runs only the flows tagged `ios`. Both pass -e APP_ID=… (a flow env default would override -e).
 appId: ${APP_ID}
 ---
 # Starting state from the test-build seed link (src/lib/e2eScenarios.ts), not setup taps.

@@ -4,6 +4,7 @@
 appId: ${APP_ID}
 tags:
   - ios-only
+  - ios
 ---
 - launchApp:
     clearState: true

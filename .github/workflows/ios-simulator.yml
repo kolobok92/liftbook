@@ -1,4 +1,5 @@
-# Builds the app for the iOS Simulator and drives it with Maestro (.maestro/*.yaml) on a GitHub
+# Builds the app for the iOS Simulator and drives it with the Maestro flows tagged `ios` (what
+# Android can't prove: the Live Activity, and the tracker + keypad under real iOS taps) on a GitHub
 # macOS runner: real native iOS UI, no device or signing needed. Uploads screenshots, a screen
 # recording, and the JUnit report.
 #
@@ -184,6 +185,7 @@ jobs:
           REC=$!
           run() {
             maestro --device="$SIM_UDID" test .maestro/ \
+              --include-tags=ios \
               -e APP_ID=io.liftbook.app \
               --test-output-dir=artifacts/output \
               --debug-output=artifacts/debug \

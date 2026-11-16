@@ -2,6 +2,9 @@
 # starts out selected so the first key replaces it, Next walks weight → reps, and a set's hint is
 # the set above's numbers until you type over them.
 appId: ${APP_ID}
+# Also part of the iOS simulator gate (the `ios` tag): the tracker and keypad under real iOS taps.
+tags:
+  - ios
 ---
 # Starting state from the test-build seed link (src/lib/e2eScenarios.ts), not setup taps.
 - clearState
