@@ -6,6 +6,12 @@ appId: ${APP_ID}
 # Starting state from the test-build seed link (src/lib/e2eScenarios.ts), not setup taps.
 - clearState
 - openLink: liftbook://e2e-seed?scenario=bench-active
+# iOS asks before following a link into the app.
+- runFlow:
+    when:
+      visible: "Open"
+    commands:
+      - tapOn: "Open"
 - extendedWaitUntil:
     visible:
       id: "weight-0-0"
