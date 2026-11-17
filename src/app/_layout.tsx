@@ -1,7 +1,9 @@
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, router, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, Platform, useColorScheme, View } from 'react-native';
+import { useEffect } from 'react';
+import { ActivityIndicator, Platform, Settings, useColorScheme, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { E2E } from '@/lib/e2eScenarios';
 import { useHydrated } from '@/lib/hooks';
 import { useWorkoutLiveActivity } from '@/lib/liveActivity';
 import { useStore } from '@/lib/store';
@@ -21,6 +23,14 @@ if (__DEV__ && Platform.OS === 'web') {
 export default function RootLayout() {
   const hydrated = useHydrated();
   useWorkoutLiveActivity();
+  // Test builds on iOS: a flow names its starting scenario as a launch argument
+  // (`launchApp: arguments: { e2eScenario: … }`), because iOS answers a link into the app with an
+  // "Open in Liftbook?" prompt that can take a minute to show on a CI simulator.
+  useEffect(() => {
+    if (!E2E || Platform.OS !== 'ios' || !hydrated) return;
+    const scenario = Settings.get('e2eScenario');
+    if (typeof scenario === 'string' && scenario) router.replace({ pathname: '/e2e-seed', params: { scenario } });
+  }, [hydrated]);
   const appearance = useStore((s) => s.settings.appearance);
   const system = useColorScheme();
   const scheme: Scheme = appearance === 'system' ? (system === 'light' ? 'light' : 'dark') : appearance;
