@@ -95,6 +95,9 @@ the full suite per iteration.
     `- openLink: liftbook://e2e-seed?scenario=<name>` (scenarios in `src/lib/e2eScenarios.ts`).
     The route only works in bundles built with `EXPO_PUBLIC_E2E=1` (this runner and
     ios-simulator.yml); never set it for the phone build (ios-unsigned.yml).
+    On iOS a flow seeds with `launchApp: arguments: { e2eScenario: <name> }` instead (read in
+    `src/app/_layout.tsx`): a link there raises an "Open in Liftbook?" prompt that can take over a
+    minute on a CI simulator and then covers the next flow. See 09 for the two-platform form.
   - Flows hold only what needs a real device: native typing/keyboard/caret, gestures, navigation,
     persistence across relaunch, and the `el-*` visual crops. Behavior belongs in component tests.
   - Builds run from a mirror at `C:\lb` (Windows 260-char path limit; long paths are off and
